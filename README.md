@@ -1,0 +1,2 @@
+# snapcap
+Frame recording utility. 
