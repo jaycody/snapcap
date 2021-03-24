@@ -7,20 +7,28 @@
  *******************************************************************/
 
 /*////////////////////////////////////////////////////////////
-**** USAGE
-**       < r >      start/stop recorder
-**       < ENTER >  snap single frame
-**       < c >      toggle cursor
-///////////////////////////////////////////////////////////*/ 
+ **** USAGE
+ **       < r >      start/stop recorder
+ **       < ENTER >  snap single frame
+ **       < c >      toggle cursor
+ ///////////////////////////////////////////////////////////*/ 
 
 
 ////////////////////////////////////////////////////////////
 ///// GLOBALS
-String PROJ       = "test_frame_location";  // Recorder class                    
-String VERSION    = "prototype";                                  
+String PROJ       = "";  // Recorder class                    
+String VERSION    = "";                                  
 String SNAP_PATH  = ("./snaps/");   //("../../../snaps/");        
 String FRAME_PATH = ("./frames/"); //("../../../frames/");     
 ////////////////////////////////////////////////////////////
+// SNAP PATH:  "./snaps/VERSION/PROJ/yyyymmdd-hhmmss-mils+VERSION.tif"
+// SNAP NAME:  "<PROJ>-yyyymmdd-hhmmss-mills-<VERSION>.tif"
+//                      [test_frame_location-20210324-013416-8186-prototype.tif]
+//
+// FRAME SEQUENCES:  "./frames/VERSION/dirStartTime<yyyymmdd-hhmm/"
+//      FRAME PATH:  "./frames/VERSION/dirStartTime<yyyymmdd-hhmm/yyyymmdd-hhmmss-######.tif"
+//    dirStartTime:  "yyyymmdd-hhmm/yyyymmdd-hhmmss-"
+//      FRAME NAME:  "yyyymmdd-hhmmss-" + "######.tif"  [20210324-013412-000156.tif]
 
 
 Recorder recorder;

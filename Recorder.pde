@@ -37,17 +37,18 @@ class Recorder {
   // subdirectory:     <PROJ> and <VERSION> are global     
   ////////////////////////////////////////////////////
 
-  // Generates SNAP name and its parent directory
+  //////// Generate SNAP path
+  //  SNAP's Path = VERSION/PROJ/timestamp+VERSION.tif
   String nowAsString() {
-    return VERSION+"/"+     //immediate parent directory
-      PROJ+"-"+             //retain proj name so snaps makes sense individually
+    return VERSION+"/"+     // mkdir parent directory, then concantenate 
+      PROJ+             //retain proj name so snaps makes sense individually
       nf(year(), 4)+
       nf(month(), 2)+
       nf(day(), 2)+"-"+
       nf(hour(), 2)+
       nf(minute(), 2)+
       nf(second(), 2)+"-"+
-      nf(millis())+"-"+
+      nf(millis(), 4)+
       VERSION;              //append with version so snaps can be identified in the wild
   }
 
@@ -67,12 +68,13 @@ class Recorder {
     // If toggle is on, then cursor should flip back at next animation cycle
     if (cursorIsOn) {
       toggleCursor();
+      //SNAPS here --> = ./snap/VERSION/PROJ/yyyymmdd-hhmmss-mils+VERSION.tif
       save(SNAP_PATH + fileName);
-      println("SAVED AS "+fileName);
+      println("\nSNAP SAVED HERE ---> "+SNAP_PATH + fileName +"\n");
       toggleCursor();
     } else {
       save(SNAP_PATH + fileName);
-      println("SAVED AS "+fileName);
+      println("\nSNAP SAVED HERE ---> "+SNAP_PATH + fileName +"\n");
     } 
     return fileName;
   }
@@ -93,7 +95,8 @@ class Recorder {
   //        in 'snaps/<version>' (determined by global VERSION)
   ////////////////////////////////////////////////////
 
-  // Generate the name and parent directories of each frame in the sequence
+  //////////// Generate FRAME SEQUENCE PATH
+  // FRAME SEQUENCE PATH = ./VERSION/dirStartTime<yyyymmdd-hhmm>/
   String frameAsString() {
     return VERSION+
       "/"+
@@ -142,7 +145,7 @@ class Recorder {
     println("****************************");
     println("*** Recording = " + recordIsOn + " ***");
     if (recordIsOn) {
-      println ("sequence located here: " + FRAME_PATH + directoryStartTime);
+      println ("\nSAVING SEQUENCE FRAMES HERE ---> " + FRAME_PATH + directoryStartTime + "\n");
     }
     println("****************************" + "\n");
   }
@@ -150,8 +153,9 @@ class Recorder {
   //////////////////////////////////////////////////
 
   //////////////////////////////////////////////////
-  //  CHECK THEN RECORD FRAMES  (use 'r' to toggle Recording)
-  // called in draw for ongoing process
+  //  FRAMES PATH = FRAME_PATH/dirStartTime<yyyymmdd-hhmm>/######.tif 
+  //    CHECK THEN RECORD FRAMES  (use 'r' to toggle Recording)
+  //    called in draw for ongoing process
   void checkRecordFrame() {
     if (recordIsOn) {
       saveFrame(FRAME_PATH + directoryStartTime + "######.tif");
