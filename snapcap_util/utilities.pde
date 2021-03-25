@@ -38,8 +38,8 @@ void printInstructions() {
   println("");
   println("                 Keyboard controls");
     println("          -----------------------------------");
-     println("   ENTER  takes a snapshot and saves it to " + SNAP_ROOT);
-     println("   TAB     clears pgraphic background to transparent");
+     println("   <ENTER>  takes a snapshot and saves it to " + SNAP_ROOT);
+     println("   <TAB>     clears pgraphic background to transparent");
      println("   'r'     toggle screen recording");
      println("   'c'     toggle cursor");
      println("   'a,s'     minDepth");
