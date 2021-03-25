@@ -5,13 +5,16 @@
 
 //////////////////////////////////////////////////
 //  TOGGLE CURSOR  =  'c'
+//     Exists outside of Recorder object to reduce dependency.... but?
 void toggleCursor () {
   cursorIsOn = !cursorIsOn;    
-  println("*** Cursor is " + cursorIsOn + " ***");
   if (cursorIsOn) {
     cursor();
+    println("*** Cursor VISIBLE again. ***");
   } else {
     noCursor();
+    println("*** Cursor HIDDEN for screenshot ***");
+    println("\t---> Screenshot SNAPPED!! <---");
   }
 }
 //  END: TOGGLE CURSOR
@@ -19,7 +22,7 @@ void toggleCursor () {
 
 
 //////////////////////////////////////////////////
-//  MAKE PIXELS CLEAR FOR PGRAPHIC  =  'TAB'
+//  SET PIXELS TRANSPARENT FOR PGRAPHIC  =  'TAB'
 void makePixelsClearAgain(PGraphics p) {
     p.beginDraw();
     p.clear();
@@ -35,7 +38,7 @@ void printInstructions() {
   println("");
   println("                 Keyboard controls");
     println("          -----------------------------------");
-     println("   ENTER  takes a snapshot and saves it to "+SNAP_PATH);
+     println("   ENTER  takes a snapshot and saves it to " + SNAP_ROOT);
      println("   TAB     clears pgraphic background to transparent");
      println("   'r'     toggle screen recording");
      println("   'c'     toggle cursor");

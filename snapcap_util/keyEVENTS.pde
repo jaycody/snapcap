@@ -30,8 +30,8 @@ void keyPressed() {
   currentKeyCode = keyCode; 
   currentKey = key;
 
-  //DEBUG: 
-  println("keyCode = "+keyCode+ " key = "+key);
+//DEBUG: WANT TO SEE THE KEYCODE FOR EACH KEY??
+  //println("keyCode = "+keyCode+ " key = "+key);
 
   //////////////////////////////////////////////////
   //  SNAP SCREEN  =  ENTER
