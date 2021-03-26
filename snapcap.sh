@@ -20,7 +20,7 @@ clean_snaps () {
 
 
 clean_frames () {
-    # Clean the local ./snaps/ directory
+    # Clean the local ./frames/ directory
     echo ""
     treela ${JAYCI_WORKSPACE}/snapcap/snapcap_util/frames/ 
     rm -rf ${JAYCI_WORKSPACE}/snapcap/snapcap_util/frames/* || true 
