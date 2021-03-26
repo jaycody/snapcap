@@ -12,7 +12,6 @@ class Recorder {
   void ready() {
     checkRecordFrame();
   }
-
   // CAPTURE FRAMES if recordIsOn
   void checkRecordFrame() {
     if (recordIsOn) {
