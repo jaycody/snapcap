@@ -3,7 +3,7 @@
 ########### BASH TOOLS FOR SNAPCAP ##############
 
 
-clean_snaps () {
+snap_clean_snaps () {
     # Clean the local ./snaps/ directory
     echo ""
     treela ${JAYCI_WORKSPACE}/snapcap/snapcap_util/snaps/ 
@@ -19,7 +19,7 @@ clean_snaps () {
 
 
 
-clean_frames () {
+snap_clean_frames () {
     # Clean the local ./frames/ directory
     echo ""
     treela ${JAYCI_WORKSPACE}/snapcap/snapcap_util/frames/ 
