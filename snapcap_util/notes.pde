@@ -60,8 +60,15 @@
   // subdirectory:     
   //        in 'snaps/<version>' (determined by global VERSION)
   ////////////////////////////////////////////////////*/
-
-
+/*************
+A note about IMAGE FORMAT: .TGA is the fastest image type when using saveFrame()
+ It's also uncompressed....
+The bigger your output , the more it slows down your sketch. While there is no 
+magic solution, the fastest image format to save an image sequence is… TGA.  
+Since this is an uncompressed format it saves much faster
+than for example JPG and it also provides 100% quality. 
+The price you pay is the size of the output files.
+*/
 
 /*/////////////////////////////////////////////////////////////
 keyCode

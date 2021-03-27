@@ -2,8 +2,11 @@ class Snapcap {
   boolean  recordIsOn =         false;
   boolean  cursorIsOn =         true;
   String   sequenceStartTime =  "";
-
+  
   Snapcap () {
+    textAlign(CENTER, CENTER);
+    textSize(30);
+
     printInstructions();
   }
 
@@ -18,6 +21,12 @@ class Snapcap {
   void checkRecordFrame() {
     if (recordIsOn) {
       saveFrame(getFrameID() + "#######.tif");
+      
+      // Print text to the main graphics screen
+      if (DEBUG) {
+        fill(0);
+        text("DEBUG: ON \nFrame Record: ON\n" + sequenceStartTime, 0, 0, width, height);
+      }
     }
   }
   //  END: CAPTURE FRAME SEQUENCE
@@ -139,17 +148,17 @@ void toggleDEBUG () {
 
 
 //////////////////////////////////////////////////
-// <TAB>
+// <TAB> Wipe the background
 void clearBackground() {
-  background(0);
-  clear();
+  //background(0);
+  //clear();
   // or use utility that takes a PGraphic argument
-  //makePixelsClearAgain(makePixelsClearForThisPGraphic);
+  makePixelsClearAgain(makePixelsClear);
 } 
 //////////////////////////////////////////////////
 
 //////////////////////////////////////////////////
-//  SET PIXELS TRANSPARENT FOR PGRAPHIC  =  'TAB'
+//  <TAB> = WIPE a specific PGraphics layer
 //     Can set individual layers to transparent!!!!!
 void makePixelsClearAgain(PGraphics p) {
     p.beginDraw();
