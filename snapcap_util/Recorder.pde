@@ -1,9 +1,10 @@
-class Recorder {
+class Snapcap {
   boolean  recordIsOn =         false;
   boolean  cursorIsOn =         true;
   String   sequenceStartTime =  "";
 
-  Recorder () {
+  Snapcap () {
+    printInstructions();
   }
 
   /*//////////////////////////////////////////////////
@@ -11,6 +12,7 @@ class Recorder {
   // MONITOR recordIsOn from drawloop (is recordIsOn?, is recordIsOn?,... ?)
   void ready() {
     checkRecordFrame();
+    updateControlsFromKeyboard();
   }
   // CAPTURE FRAMES if recordIsOn
   void checkRecordFrame() {
@@ -55,35 +57,40 @@ class Recorder {
   String getSnapID() {
       return SNAP_PATH + getSnapTime();
   }
-  // frameID = FRAME_ROOT + sequenceID + frameTime + frameCount
-  String getFrameID() {
-    return FRAME_ROOT + sequenceStartTime + getFrameTime();
-  } 
- // sequenceStartTime = VERSION/timestamp/  isA PATH to sequence frames
-  String getSequenceStartTime() {
-    return VERSION + "/" +
-      nf(year(), 4) + nf(month(), 2)  + nf(day(), 2)    + "-" + 
-      nf(hour(), 2) + nf(minute(), 2) + "/";
-  }
-  // snapTime = timestamp-version     snap's naming convention
+
+  // snapTime = timestamp + version
   String getSnapTime() {
     return 
       nf(year(), 4)   + nf(month(), 2)  + nf(day(), 2)    + "-" +  // yyyymmdd-
       nf(hour(), 2)   + nf(minute(), 2) + nf(second(), 2) + "-" +  // hrmmss-
       nf(millis(), 6) + VERSION;                                  
   }
-  // frameTime = frame naming
+
+  // frameID = FRAME_ROOT + sequenceID + frameTime + frameCount
+  String getFrameID() {
+    return FRAME_ROOT + sequenceStartTime + getFrameTime();
+  } 
+
+ // frameTime = timestamp to the second
   String getFrameTime() {
     return 
       nf(year(), 4) + nf(month(), 2)  + nf(day(), 2)    + "-" +
       nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + "-";
   } 
+
+ // sequenceStartTime = defines PATH VERSION/timestamp/ to sequence frames
+  String getSequenceStartTime() {
+    return VERSION + "/" +
+      nf(year(), 4) + nf(month(), 2)  + nf(day(), 2)    + "-" + 
+      nf(hour(), 2) + nf(minute(), 2) + "/";
+  }
+  
   //  END: GET IDs
   //////////////////////////////////////////////////
 
 
   /*/////////////////////////////////////////////////
-  TOGGLE GLOBAL: recordIsOn
+  TOGGLE: recordIsOn [Initiated by switch case 'r' in keyEVENTS]
       * Get sequence ID [<VERSION>/<yyyymmdd-hhmm>/<yyyymmdd-hhmmss->]
       * Toggle global: recordIsOn, then show me its state, and if on, show path too.
       * SEQUENCE START-TIME remains until next toggle; (else new dir for every frame ;)
@@ -98,7 +105,118 @@ class Recorder {
     }
     println("****************************\n" + "\n");
   }
-  //  END: TOGGLE GLOBAL recordIsOn 
+  //  END: TOGGLE RECORDING 
   //////////////////////////////////////////////////
+
+//////////////////////////////////////////////////
+//  TOGGLE CURSOR  =  'c'
+void toggleCursor () {
+  cursorIsOn = !cursorIsOn;    
+  if (cursorIsOn) {
+    cursor();
+    println("*** Cursor VISIBLE again. ***");
+  } else {
+    noCursor();
+    println("*** Cursor HIDDEN for screenshot ***");
+    println("\t---> Screenshot SNAPPED!! <---");
+  }
+}
+//  END: TOGGLE CURSOR
+//////////////////////////////////////////////////
+
+//////////////////////////////////////////////////
+//  TOGGLE DEBUG  =  'd'
+void toggleDEBUG () {
+  DEBUG = !DEBUG;    
+  if (DEBUG) {
+    println("*** DEBUG: ON ***");
+  } else {
+    println("*** DEBUG: OFF ***");
+  }
+}
+//  END: TOGGLE DEBUG
+//////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////
+// <TAB>
+void clearBackground() {
+  background(0);
+  clear();
+  // or use utility that takes a PGraphic argument
+  //makePixelsClearAgain(makePixelsClearForThisPGraphic);
+} 
+//////////////////////////////////////////////////
+
+//////////////////////////////////////////////////
+//  SET PIXELS TRANSPARENT FOR PGRAPHIC  =  'TAB'
+//     Can set individual layers to transparent!!!!!
+void makePixelsClearAgain(PGraphics p) {
+    p.beginDraw();
+    p.clear();
+    p.endDraw();
+}
+//  END: MAKE PIXELS CLEAR
+//////////////////////////////////////////////////
+
+
+
+//////////////////////////////////////////////////
+void printInstructions() {
+  println("");
+  println("                 Keyboard controls");
+    println("          -----------------------------------");
+     println("   <ENTER> SNAP the screen and save to " + SNAP_ROOT);
+     println("   <TAB>   Make background transparent");
+     println("   'r'     toggle screen recording");
+     println("   'c'     toggle cursor");
+     println("   'w'     momentary switch, stays engaged until released");
+     println("   'i'     Print instructions to console");
+
+     println("          -----------------------------------");
+     println("");
+}
+//////////////////////////////////////////////////
+
+
+
+/*////////////////////////////////////////////////////
+//  CREATE REPEATING BUTTONS
+//  ------> CALLED IN THE DRAW LOOP <------------------*/
+void updateControlsFromKeyboard() {
+  /* This function runs only if:
+     * Key being pressed is specified in this function, 
+  * This function shuts down when:
+     * ...when keyRelease() sets currentKeyCode to -1
+     * or when key pressed is not specified here 
+////////////////////////////////////////////////////*/
+
+  // ALLOW SPECIFIC KEY TO REPEAT
+  if ((currentKeyCode == -1) || !(currentKey == 'w')){
+    //clearButtons();
+    return;
+  }
+
+  /////////////////////////////////////////////////
+  //  SHOW REPEATING KEY: (good for selecting source images) 
+  if (currentKey == 'w') {
+    println("'" + currentKey + "' isA repeating key. Use it wisely! (eg. selecting source image)");
+  }
+
+  //////////////////////////////////////////////////
+  if (DEBUG) {
+    println("\nDEBUG: On draw loop, from updateControlsFromKeyboard()");
+    println("\t---> SYSTEM: Key pressed = '" + key + "'  \tSYSTEM: keyCode    \t  = " + keyCode);
+    println("\t---> GLOBAL: currentKey  = '" + currentKey + "' \tGLOBAL: currentKeyCode = " + currentKeyCode + "\n");
+  }
+  ////////////////////////////////////////////////// 
+}
+//  END updateControlsFromKeyboard()
+/////////////////////////////////////////////////////////////
+
+
+
+
+
 
 }

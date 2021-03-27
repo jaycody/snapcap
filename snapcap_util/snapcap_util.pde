@@ -1,6 +1,6 @@
 /*******************************************************************
  * snapcap du videoalchemy
-     * Util captures and organizes graphics output.
+     * Util captures and organizes graphics output....in a snap ;)
      * Snap a screenshot or record a sequence of frames 
      * Name files with timestamps and dirs with sequence start-times
      * Start and stop without overwriting previous recordings
@@ -10,21 +10,24 @@
  *******************************************************************/
 
 ////////////////////////////////////////////////////////////
-///// GLOBALS
+///// GLOBALS for snapcap IDs
 String PROJ       = "projtest-";                                    
 String VERSION    = "vertest";                                  
 String SNAP_ROOT  = ("./snaps/");              
 String FRAME_ROOT = ("./frames/");    
 String SNAP_PATH  = SNAP_ROOT + VERSION + "/" + PROJ;      
 ////////////////////////////////////////////////////////////
+///// GLOBALS for keyEvents
+char    currentKey; 
+int     currentKeyCode = -1;
+boolean DEBUG = true;
+////////////////////////////////////////////////////////////
 
-Recorder recorder;
-boolean cursorIsOn = true;
+Snapcap snapcap;
 
 void setup() {
   size(1280, 480, P2D);
-  recorder = new Recorder();
-  printInstructions();
+  snapcap = new Snapcap();
 }
 
 void draw() {
@@ -34,13 +37,8 @@ void draw() {
   ///////////////////
  
   /*******************************
-  * FRAME RECORDER ////////////
-    * Keep as final step in draw loop
-    * Monitor the recorderIsOn boolean
-    * If recorderIsOn, then saveFrame */
-  recorder.ready();
+  * SNAP CAPTURER ////////////
+    * Keep as final step in draw loop*/
+  snapcap.ready();
   //*******************************
-  
-  // Check for button presses
-  updateControlsFromKeyboard();
 }
