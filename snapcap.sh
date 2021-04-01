@@ -3,6 +3,14 @@
 ########### BASH TOOLS FOR SNAPCAP ##############
 
 
+###### INITIATE A NEW PROJECT #######
+## snap_create_project () {
+
+#}
+
+
+# TODO: Allow user input to determine path.
+#           - Path needs to be project specific, not hardcoded
 snap_clean_snaps () {
     # Clean the local ./snaps/ directory
     echo ""
@@ -33,7 +41,7 @@ snap_clean_frames () {
 }
 
 
-# Clean ALL local ./frames/ director
+
 snap_clean_all () {
     # Clean the local ./frames/ and ./snaps/ directories
     echo ""

@@ -24,25 +24,26 @@ boolean  DEBUG = true;
 ////////////////////////////////////////////////////////////
 
 Snapcap       snapcap;
-TemplateLayer templatelayer;
+ImageLayer imagelayer;
 
 void setup() {
   size(1280, 480, P2D);
 
   snapcap         = new Snapcap();
-  templatelayer   = new TemplateLayer();
+  imagelayer      = new ImageLayer();
 }
 
 void draw() {
-  ////////////////////
-  // MAGIC HERE
-  templatelayer.ready();
-  ///////////////////
+
+  /*******************************
+  * MAGIC HERE /////////////*/
+  imagelayer.ready();
+  //*******************************
 
 
   /*******************************
-   * SNAP CAPTURER ////////////
-   * Keep as final step in draw loop*/
+   * SNAP HERE ////////////
+   * ----> always final draw step*/
   snapcap.ready();
   //*******************************
 }

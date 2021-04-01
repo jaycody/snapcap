@@ -155,8 +155,8 @@ class Snapcap {
       background(0);
     } else {
 //TODO: Remove hardcoded PGraphic vars      ///////////////////////
-      makePixelsClearAgain(templatelayer.makePixelsClear);
-      makePixelsClearAgain(templatelayer.buffer);
+      clearPGraphic(templatelayer.offScreenBuffer);
+      clearPGraphic(templatelayer.displayLayer);
 //TODO: Remove hardcoded PGraphic vars      ///////////////////////
     }
   }
@@ -165,7 +165,7 @@ class Snapcap {
   //////////////////////////////////////////////////
   //  <TAB> = WIPE a specific PGraphics layer
   //     Can set individual layers to transparent!!!!!
-  void makePixelsClearAgain(PGraphics p) {
+  void clearPGraphic(PGraphics p) {
     p.beginDraw();
     p.clear();
     p.endDraw();
