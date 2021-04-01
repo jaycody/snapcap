@@ -32,9 +32,9 @@ void keyPressed() {
   }
 
   /////////////////////////////////////////////////
-  //  CLEAR BACKGROUND ---> PRESS <TAB>
-  if (currentKeyCode==TAB) {
-    snapcap.clearBackground();
+  //  CLEAR BACKGROUND ---> PRESS <TAB> (or SPACE BAR:32)
+  if ((currentKeyCode==TAB) || (currentKeyCode==32)){
+    snapcap.clearBackground(currentKeyCode);
   } 
 
   /////////////////////////////////////////////////
