@@ -15,7 +15,7 @@ class Snapcap {
   // MONITOR recordIsOn from drawloop (is recordIsOn?, is recordIsOn?,... ?)
   void ready() {
     checkRecordFrame();
-    updateControlsFromKeyboard();
+    checkForRepeatingKey();
   }
   // CAPTURE FRAMES if recordIsOn
   void checkRecordFrame() {
@@ -197,7 +197,7 @@ class Snapcap {
   /*////////////////////////////////////////////////////
    //  CREATE REPEATING BUTTONS
    //  ------> CALLED IN THE DRAW LOOP <------------------*/
-  void updateControlsFromKeyboard() {
+  void checkForRepeatingKey() {
     /* This function runs only if:
      * Key being pressed is specified in this function,
      * This function shuts down when:
@@ -206,6 +206,9 @@ class Snapcap {
      ////////////////////////////////////////////////////*/
 
     // ALLOW SPECIFIC KEY TO REPEAT
+    //    RETURN if NO keyPressed
+    //    RETURN if keyPressed but key is not 'w'
+    //    EXECUTE CODE if 'w' is pressed
     if ((currentKeyCode == -1) || !(currentKey == 'w')) {
       //clearButtons();
       return;
@@ -219,12 +222,12 @@ class Snapcap {
 
     //////////////////////////////////////////////////
     if (DEBUG) {
-      println("\nDEBUG: On draw loop, from updateControlsFromKeyboard()");
+      println("\nDEBUG: On draw loop, from checkForRepeatingKey()");
       println("\t---> SYSTEM: Key pressed = '" + key + "'  \tSYSTEM: keyCode    \t  = " + keyCode);
       println("\t---> GLOBAL: currentKey  = '" + currentKey + "' \tGLOBAL: currentKeyCode = " + currentKeyCode + "\n");
     }
     //////////////////////////////////////////////////
   }
-  //  END updateControlsFromKeyboard()
+  //  END checkForRepeatingKey()
   /////////////////////////////////////////////////////////////
 }
