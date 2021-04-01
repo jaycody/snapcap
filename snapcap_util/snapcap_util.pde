@@ -11,8 +11,8 @@
 
 ////////////////////////////////////////////////////////////
 ///// GLOBALS for snapcap IDs
-String   PROJ           = "projtest-";
-String   VERSION        = "niko";
+String   PROJ           = "snapcap";
+String   VERSION        = "ver1_0_0";
 String   SNAP_ROOT      = ("./snaps/");
 String   FRAME_ROOT     = ("./frames/");
 String   SNAP_PATH      = SNAP_ROOT + VERSION + "/" + PROJ;
