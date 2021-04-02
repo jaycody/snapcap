@@ -4,9 +4,17 @@
 
 
 ###### INITIATE A NEW PROJECT #######
-## snap_create_project () {
+  snap_create_project () {
+      echo -n "Project name: "
+      read PROJECT
+      echo -n "Project: $PROJECT"
 
-#}
+      echo ""
+      echo -n "Create a new directory in .../jaycody/ for proj: $PROJECT? [y/n]"
+      read directoryIsOn
+      echo -n "Creating directory: ..../jaycody/${PROJECT}/"
+      #exit
+}
 
 
 # TODO: Allow user input to determine path.
