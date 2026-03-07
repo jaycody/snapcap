@@ -1,249 +1,290 @@
-# Comprehensive Code Review: snapcap
+# snapcap: Deep Code Review & Assessment
 
-> Review performed February 2026 against commit `1300ef9` on branch `claude/code-review-assessment-hmx7x`
+> Review performed March 2026 against commit `cf03243` on branch `claude/code-review-analysis-dwvKp`
 
 ---
 
-## 1. Your Style
+## Who You Are (From the Code)
 
-Your code has a **distinctive authorial voice** that is immediately recognizable. A few defining characteristics:
+Before getting into specifics: **you are a visual artist who learned to code to capture your own work.** That framing is not condescending -- it's the most important thing to understand about this codebase. Every design decision, every strength, every weakness maps back to it. The code is a tool built by someone whose primary identity is *videoalchemy*, not software engineer. Keep that as the lens.
 
-**Visual-structural formatting.** You use extensive ASCII separator lines (`//////////`, `/*****/`, `///***///|||`) to create visual "regions" in your files. This isn't a common software engineering convention -- it's the instinct of someone who thinks visually. You treat source code like a layout, not just logic. The separators create blocks that scan almost like storyboard panels.
+---
 
-**Narrative commenting.** Your comments don't read like dry documentation -- they read like a lab notebook or internal monologue. Examples:
+## What You Did Well
 
-- `println("\n\tOHH SNAAAP ---> " + snapID + ".tif\n");` -- personality in output strings
-- `// functions like a pull-down resistor` -- hardware metaphor for a software pattern
-- `// (else new dir for every frame ;)` -- the winking aside to your future self
-- The entire `notes.pde` is essentially a working journal embedded in the codebase
+### 1. You Built a Real Thing That Solves a Real Problem
 
-**Intentional alignment.** You visually align variable declarations:
+This is not a tutorial project. It's not a class assignment. `snapcap` solves an actual pain point in a creative workflow -- frame capture, timestamp-based directory organization, seamless integration into a Processing draw loop -- and it does that thing reliably. Most people at your level never get past "hello world" projects. You shipped a working tool you actually use. That matters more than any pattern.
+
+### 2. Boolean Naming (`recordIsOn`, `cursorIsOn`)
+
 ```java
 boolean  recordIsOn =         false;
 boolean  cursorIsOn =         true;
-String   sequenceStartTime =  "";
 ```
-This is manual column alignment -- you care about how code *looks* on the screen.
 
-**File-as-responsibility separation.** Splitting `keyEVENTS.pde`, `Snapcap.pde`, `ImageLayer.pde`, and `notes.pde` into separate files shows you're thinking about conceptual separation, even within Processing's flat-file model.
+These are genuinely good. Not `isRecord`, not `recording`, not `flag1` -- `recordIsOn` reads as a question answered. Many professional engineers don't name booleans this clearly. The vertical alignment is also considered and intentional.
 
-**Commit messages as diary.** Your git history reads like a logbook:
-> `5ef8c3b` - "Took hours to figure out how to remove the niko-test movie file. In the end I backed up snapcap, deleted it, recloned it, then moved the processing scripts back."
+### 3. Timestamp-Based File Organization
 
-You document *struggle*, not just outcome. That's the signature of someone who treats the repo as a record of learning.
+The naming scheme `VERSION/yyyymmdd-hhmm/yyyymmdd-hhmmss-######.tif` is the most professionally-reasoned design in the project. It:
+- Prevents overwrite collisions
+- Groups by session (start-time directory)
+- Is human-readable in any file browser
+- Scales to multi-day use without conflict
 
----
+This didn't come from a book. It came from using the tool and feeling the pain of bad naming. That's called **experience-driven design**, and it's more valuable than memorizing patterns.
 
-## 2. Skill Assessment
+### 4. The Pull-Down Resistor Pattern
 
-**Level: Intermediate practitioner, self-directed learner, creative-technologist orientation.**
-
-You are not a professional software engineer by training -- and that's not a deficit. Your code reveals someone who builds tools *in service of a creative practice* (visual art, animation, video alchemy). You've internalized the Processing framework deeply and you understand event-driven programming, OOP basics, file I/O, and path construction. You know enough to build real, functional utilities that solve actual problems in your workflow.
-
-Where you sit on specific axes:
-
-| Dimension | Level | Evidence |
-|---|---|---|
-| Processing/framework fluency | **Strong** | PGraphics layers, P2D renderer, `nf()` for zero-padding, `saveFrame()` usage |
-| OOP fundamentals | **Solid** | Classes with state and methods, constructor initialization, encapsulation |
-| Naming discipline | **Improving** | `recordIsOn`, `cursorIsOn` are good; `ready()` is vague; commit history shows growing attention to naming |
-| Architecture | **Emerging** | File separation is good instinct; but globals and cross-file coupling undermine it |
-| Defensive coding | **Early** | No error handling, no null checks, no edge case consideration |
-| DRY principle | **Not yet internalized** | Timestamp logic repeated 3 times; bash clean functions copy-pasted |
-| Git fluency | **Learning** | Commit `5ef8c3b` shows struggling with basic git operations; but you kept at it |
-| DevOps/CI | **Exploratory** | CI pipeline exists but does nothing; issue templates are GitHub defaults |
-
----
-
-## 3. Expert Patterns (Things You're Doing Well)
-
-### a. Boolean naming with semantic prefixes
-`Snapcap.pde:2-3`
-```java
-boolean recordIsOn = false;
-boolean cursorIsOn = true;
-```
-These read as natural-language predicates. Many experienced developers don't name booleans this clearly.
-
-### b. Timestamp-based file organization
-`Snapcap.pde:66-95`
-
-Your snap/frame naming scheme (`VERSION/yyyymmdd-hhmm/yyyymmdd-hhmmss-######.tif`) is genuinely well-designed. It prevents overwrites, organizes by session, and is human-readable in a file browser. This is the kind of thing that comes from *using your own tool* and feeling the pain of bad naming.
-
-### c. The "pull-down resistor" pattern
-`keyEVENTS.pde:14-17`
 ```java
 void keyReleased() {
-  currentKeyCode = -1;
+  currentKeyCode = -1;  // functions like a pull-down resistor
 }
 ```
-Using `keyReleased` to clear state is a clean debounce pattern. The hardware metaphor in the comment shows you're mapping concepts across domains -- that's creative engineering thinking.
 
-### d. Cursor-hide-during-capture
-`Snapcap.pde:49-55`
+The hardware metaphor in the comment is the tell: you're a cross-domain thinker. The pattern itself is correct and clean for debouncing key repeat. The comment reveals you *understand why it works*, not just that it does.
 
-Hiding the cursor before a screenshot and restoring it after is a thoughtful UX detail that most beginners wouldn't think of. You encountered this problem in practice and solved it.
+### 5. Cursor-Hide-During-Capture
 
-### e. Separation of snap vs. frame-sequence concerns
-The mental model of "a snap is a single capture; a frame sequence is a recording session with a start-time directory" is clearly designed. The directory structure reflects the conceptual model.
+```java
+if (cursorIsOn) {
+  toggleCursor();
+  save(snapID);
+  toggleCursor();
+}
+```
 
-### f. Well-configured `.gitignore`
-Excluding `*.tif`, platform builds, and `.DS_Store` shows you've thought about what belongs in version control.
+Most beginners wouldn't think of this. You thought of it because you used the tool and saw the cursor in your screenshots. **You iterated on your own pain.** That's the engineering process working correctly.
+
+### 6. File-as-Responsibility Separation
+
+Splitting `keyEVENTS.pde`, `Snapcap.pde`, `ImageLayer.pde` into separate files inside Processing's flat-file model shows you're *thinking about conceptual separation* even when the framework doesn't require it. That instinct is the seed of good architecture.
+
+### 7. The `.gitignore` Is Thoughtful
+
+```
+*.tif
+.DS_Store
+applet
+application.linux-arm64
+```
+
+Excluding output images, platform builds, and OS artifacts shows you understand what belongs in version control. Not obvious for a self-taught programmer.
 
 ---
 
-## 4. Novice Patterns (Things That Reveal Inexperience)
+## What Was Amateur
 
-### a. Global mutable state
-`snapcap_util.pde:21-23`
+These are not criticisms -- they are the predictable gaps of someone self-teaching without a senior to review their code. They're also all fixable.
+
+### 1. Global Mutable State (The Biggest Problem)
+
 ```java
+// snapcap_util.pde
 char     currentKey;
 int      currentKeyCode = -1;
 boolean  DEBUG = true;
 ```
-These globals are read and written from multiple files (`keyEVENTS.pde` writes them, `Snapcap.pde` reads them). This creates invisible coupling between files. If the codebase grew even slightly, this would become a source of bugs that are extremely hard to trace.
 
-### b. Magic numbers
-`keyEVENTS.pde:36`, `Snapcap.pde:154`
-```java
-if ((currentKeyCode==TAB) || (currentKeyCode==32)){  // 32 = spacebar
-```
-```java
-if (key_pressed == 32) {  // again, spacebar
-```
-You use Processing's named constant `TAB` in one place but the raw integer `32` for spacebar. Processing doesn't define a `SPACE` constant, but you could define your own: `final int SPACE = 32;`
+`keyEVENTS.pde` writes these. `Snapcap.pde` reads them. Nothing enforces this contract. If you add a third file, or rename a variable, or refactor `Snapcap`, you'll have a mysterious bug with no obvious source. This is the **single highest-leverage thing to fix** -- not because it's broken now, but because it becomes a trap as the codebase grows.
 
-### c. Dead/broken reference (BUG)
+**Alternative path:** Move `currentKey` and `currentKeyCode` into `Snapcap` as fields, or create a small `InputState` class. Pass them explicitly into methods that need them.
+
+### 2. The Broken Bug (`templatelayer`)
+
 `Snapcap.pde:158-159`
 ```java
 clearPGraphic(templatelayer.offScreenBuffer);
 clearPGraphic(templatelayer.displayLayer);
 ```
-`templatelayer` does not exist anywhere in this codebase. The actual variable is `imagelayer` (declared in `snapcap_util.pde:27`). This code will crash at runtime if you press TAB. This is a **bug** -- likely a remnant from a rename that wasn't completed.
 
-### d. Copy-paste duplication -- timestamp formatting
-`Snapcap.pde:72-95`
+`templatelayer` does not exist. The variable is `imagelayer`. This crashes at runtime if you press TAB. It's a remnant of a rename that wasn't finished -- you can see the TODO comment surrounding it:
 
-`getSnapTime()`, `getFrameTime()`, and `getSequenceStartTime()` all build timestamps with nearly identical `nf()` chains. If you ever change the date format, you'd need to change it in three places. A single `getTimestamp()` helper would eliminate this.
+```java
+//TODO: Remove hardcoded PGraphic vars      ///////////////////////
+```
 
-### e. Copy-paste duplication -- bash clean functions
-`snapcap.sh:53-74`
+You knew this was wrong when you wrote it. The TODO says so. But the bug stayed. **This is the hallmark of technical debt**: you noted the problem, moved on, and it calcified.
 
-`snap_clean_all()` is a literal copy-paste of `snap_clean_frames()` + `snap_clean_snaps()` instead of:
+**The fix is one word.** But more importantly: when you write `//TODO:`, either fix it now or open a GitHub issue *immediately*. Don't leave live bugs in code with just a comment.
+
+### 3. Copy-Paste Duplication
+
+**In `Snapcap.pde`**, `getSnapTime()`, `getFrameTime()`, and `getSequenceStartTime()` all build timestamps with nearly identical `nf()` chains. If the date format ever changes, you fix it in three places -- and you'll miss one.
+
+**In `snapcap.sh`**, `snap_clean_all()` is a literal copy-paste of the other two functions:
+
 ```bash
-snap_clean_all() {
-  snap_clean_frames
-  snap_clean_snaps
+# What you wrote:
+snap_clean_all () {
+    # ... exact copy of snap_clean_frames code ...
+    # ... exact copy of snap_clean_snaps code ...
+}
+
+# What it should be:
+snap_clean_all () {
+    snap_clean_frames
+    snap_clean_snaps
 }
 ```
 
-### f. Misleading side effects in `toggleCursor()`
-`Snapcap.pde:128-131`
+The DRY principle ("Don't Repeat Yourself") is not aesthetic -- it's about reducing the number of places where bugs can live.
+
+### 4. Magic Numbers
+
 ```java
-noCursor();
-println("*** Cursor HIDDEN for screenshot ***");
-println("\t---> Screenshot SNAPPED!! <---");
+if ((currentKeyCode==TAB) || (currentKeyCode==32)){
 ```
-This prints "Screenshot SNAPPED!!" when the cursor is hidden -- but hiding the cursor isn't the same as taking a screenshot. When `toggleCursor()` is called from the `'c'` key handler, the user sees "Screenshot SNAPPED!!" even though no screenshot was taken.
 
-### g. The `ready()` method name
-`Snapcap.pde:16`, `ImageLayer.pde:11`
-
-Both classes have a `ready()` method, but they don't check readiness -- they *execute per-frame logic*. A name like `update()`, `process()`, or `drawFrame()` would convey what the method actually does.
-
-### h. Redundant guard in `checkForRepeatingKey()`
-`Snapcap.pde:212-219`
 ```java
-if ((currentKeyCode == -1) || !(currentKey == 'w')) {
-  return;
+if (key_pressed == 32) {
+```
+
+You used `TAB` (correct, named constant) and `32` (raw integer, spacebar) in the same conditional -- twice. Processing doesn't define `SPACE`, but you can:
+
+```java
+final int SPACE = 32;
+```
+
+Two lines at the top of the file, zero ambiguity forever.
+
+### 5. The `ready()` Method Name
+
+Both `Snapcap` and `ImageLayer` have a method called `ready()`. Neither checks readiness. Both execute per-frame logic. Calling something `ready()` when it means "execute this frame's work" violates the principle that a function's name should match its behavior. Callers in `draw()` who see `snapcap.ready()` have no idea what it does without reading the implementation.
+
+Better names: `update()`, `processFrame()`, `onDraw()`.
+
+### 6. Misleading Console Output in `toggleCursor()`
+
+```java
+} else {
+  noCursor();
+  println("*** Cursor HIDDEN for screenshot ***");
+  println("\t---> Screenshot SNAPPED!! <---");
 }
-if (currentKey == 'w') {  // <-- this is always true here
 ```
-After the early return, `currentKey` is *guaranteed* to be `'w'`. The second `if` is dead logic.
 
-### i. Unfinished stub functions
-`snapcap.sh:7-17`
+When the user presses `'c'` to hide the cursor, the console prints "Screenshot SNAPPED!!" -- even though no screenshot was taken. This is a bug in the developer experience, not a crash. But it erodes trust in the debug output.
 
-`snap_create_project()` reads input but never creates a directory. The `#exit` comment suggests it was abandoned mid-implementation.
+### 7. The Bash Scripts Are Dangerous
 
-### j. No tests
-Zero. The CI pipeline runs `echo Hello, world!`. There's no validation that any of this code works beyond manual testing.
-
----
-
-## 5. Weaknesses to Address
-
-### Structural
-- **No error handling anywhere.** What happens if the snaps directory doesn't exist? If disk is full? If path is invalid? Currently: unhandled exceptions.
-- **No input validation.** The bash scripts use `rm -rf` on paths constructed from environment variables (`${JAYCI_WORKSPACE}`). If that variable is unset, `rm -rf` runs on a partial path. This is genuinely dangerous.
-- **Hardcoded environment assumptions.** `snapcap.cfg` references `${JAY_SPACE}`, `snapcap.sh` references `${JAYCI_WORKSPACE}`. These are personal environment variables that make the tools unusable by anyone else.
-
-### Architectural
-- **The `notes.pde` file.** It's a 124-line file that contains zero executable code -- it's all block comments. This should be a markdown file or a wiki page, not a `.pde` file that gets compiled (even if Processing ignores it in comments). It obscures the boundary between documentation and code.
-- **Mixed responsibility in `Snapcap` class.** The `Snapcap` class handles: recording, snapshotting, cursor toggling, debug toggling, background clearing, PGraphics clearing, instruction printing, *and* key-repeat detection. That's at least 5 different responsibilities in one class.
-
-### Process
-- **No versioning strategy.** `VERSION = "ver1_0_0"` is a hardcoded string. There's no mechanism to bump it, and the SECURITY.md references versions that don't match this scheme (`0.0-alpha.0`).
-- **CI does nothing.** The GitHub Actions workflow is scaffolding from 2021 that was never developed further.
-
----
-
-## 6. The Narrative: What the Comments Tell Me
-
-Reading your code and commits together, a clear story emerges:
-
-**You are a visual artist who learned to code in order to capture your own work.**
-
-The project name "snapcap" -- snap + capture -- and the brand "videoalchemy" tell me your primary identity is as a creator of visual/generative art, likely using Processing as your creative medium. You needed a way to record and organize the output of your sketches, and rather than use someone else's tool, you built your own. This is a *tool-maker's instinct* -- the same impulse that makes a woodworker build their own jigs.
-
-Your `notes.pde` is a **working journal**. The detailed notes about TGA vs. JPG performance, the symlink setup instructions, the frame-naming conventions -- these aren't written for other developers. They're written for *you, six months from now*, when you've forgotten how this works. The comment style is someone thinking out loud while they build.
-
-The commit history tells a **learning arc**:
-
-1. **Discovery phase** (`Initial commit` through `Create act01.yml`): Setting up GitHub, trying Actions, adding issue templates, writing a security policy -- you were exploring what a "real" repo looks like.
-2. **Build phase** (`Repurpose utiliplate` through `Add per-vertex fill`): Extracting this tool from a larger project ("utiliplate"), building out features, learning by doing.
-3. **Refinement phase** (`Refactor everything` through `Simplified GLOBALS`): Growing dissatisfaction with mess, refactoring passes, renaming for clarity. The commit "Refactor everything" is particularly telling -- it's the moment where accumulated technical debt became intolerable and you did a big cleanup. The later, more surgical commits ("Clarify function name", "Simplified GLOBALS") show you learning to make smaller, more focused changes.
-
-The `5ef8c3b` commit -- *"Took hours to figure out how to remove the niko-test movie file"* -- is the most human moment in the repo. You committed a large binary, couldn't undo it, and eventually resorted to backing up, deleting the repo, recloning, and manually restoring files. You documented this struggle honestly instead of hiding it. That honesty is a strength.
-
-The TODOs scattered through the code (`green/red tint for recording state`, `bash boilerplate generator`, `Add documentation to README`) are a roadmap of aspirations that haven't been realized. The gap between intention and execution is normal -- but the number of unfinished items suggests a pattern of starting new ideas before finishing existing ones.
-
----
-
-## 7. Options for Next Steps
-
-Here are paths forward, ordered from most impactful to most ambitious:
-
-### A. Fix the Bug
-The `templatelayer` reference in `Snapcap.pde:158-159` is broken. This should be `imagelayer`. This is a one-line fix that prevents a runtime crash.
-
-### B. Eliminate Duplication
-Extract a shared `getTimestamp(int precision)` method to replace the three copy-pasted `nf()` chains. Refactor `snap_clean_all()` to call the other two functions. This builds the DRY habit.
-
-### C. Kill the Globals
-Move `currentKey` and `currentKeyCode` into the `Snapcap` class (or a dedicated `InputState` class). Pass them explicitly instead of sharing through global scope. This is the single highest-leverage architectural improvement.
-
-### D. Add Safety to Bash Scripts
-Add checks for unset environment variables before `rm -rf`:
 ```bash
-: "${JAYCI_WORKSPACE:?Error: JAYCI_WORKSPACE not set}"
+rm -rf ${JAYCI_WORKSPACE}/snapcap/snapcap_util/snaps/* || true
 ```
-This prevents a dangerous partial-path deletion.
 
-### E. Move `notes.pde` to Documentation
-Convert the content to a proper `docs/` markdown file or the README. Remove the 124-line comment file from the compiled codebase.
+If `${JAYCI_WORKSPACE}` is unset or empty, this becomes:
+```bash
+rm -rf /snapcap/snapcap_util/snaps/*
+```
 
-### F. Make CI Real
-Either remove the GitHub Actions workflow or make it do something -- even just syntax checking the `.pde` files or linting the bash scripts.
+On most systems that fails harmlessly, but the `|| true` suppresses the error. Add this at the top of every function that uses environment variables destructively:
 
-### G. Refactor `Snapcap` Class Responsibilities
-Split recording, screenshot, cursor management, and debug into separate concerns. This is the most ambitious refactor but would make the code meaningfully more maintainable.
+```bash
+: "${JAYCI_WORKSPACE:?Error: JAYCI_WORKSPACE is not set}"
+```
 
-### H. Add a Testing Strategy
-Processing doesn't have a built-in test framework, but you could write integration tests that verify file output, directory creation, and naming conventions using a bash test script.
+If the variable is unset, the script exits with a readable error instead of running `rm -rf` on a broken path.
+
+### 8. `snap_create_project()` Is Dead Code
+
+```bash
+snap_create_project () {
+    echo -n "Project name: "
+    read PROJECT
+    echo -n "Project: $PROJECT"
+    # ...
+    #exit
+}
+```
+
+The `#exit` comment suggests you stopped mid-implementation and left it. The function reads a project name and does nothing with it. Either finish it or delete it. Dead stubs are worse than nothing -- they promise capability that doesn't exist.
+
+### 9. `notes.pde` Is Not Code
+
+125 lines of block comments that will never execute. This belongs in `docs/NOTES.md` or the README -- not in a `.pde` file that sits alongside your class definitions. The boundary between documentation and code matters.
+
+### 10. CI Does Nothing
+
+```yaml
+- name: Run a one-line script
+  run: echo Hello, world!
+```
+
+You set up the right infrastructure (GitHub Actions, issue templates, security policy) but never wired it to anything real. This is the infrastructure of a professional project with none of the function. Either wire it to lint your bash scripts (`shellcheck`), or delete the workflow. A green CI badge that runs `echo` is worse than no badge.
+
+---
+
+## Guidance: Paths Forward
+
+In order of impact vs. effort:
+
+### Tier 1: Fix Now (< 1 hour each)
+
+**A. Fix the `templatelayer` bug.** One word change: `templatelayer` → `imagelayer` at `Snapcap.pde:158-159`.
+
+**B. Fix the misleading console output** in `toggleCursor()`. Remove the "Screenshot SNAPPED!!" line from the cursor-hide branch.
+
+**C. Add bash safety guards** to `snap_clean_*` functions. One line per function prevents dangerous `rm -rf` on unset paths.
+
+**D. Fix `snap_clean_all()`.** Two lines replace thirty copy-pasted lines.
+
+### Tier 2: Build the Habit (1-4 hours each)
+
+**E. Extract a single `getTimestamp()` helper.** Replace three duplicate timestamp chains with one function. This is the first time you'll feel what DRY actually saves.
+
+**F. Define `final int SPACE = 32;`** at the top of the main sketch. Then use it everywhere.
+
+**G. Rename `ready()` to `update()` or `processFrame()`** in both classes. Small change, large clarity improvement.
+
+**H. Move `notes.pde` to `docs/NOTES.md`.** Cut and paste, update `.gitignore` if needed.
+
+### Tier 3: Architectural Growth (several sessions)
+
+**I. Kill the globals.** Move `currentKey`/`currentKeyCode` into `Snapcap` or a dedicated `InputState` class. This is the hardest mental shift but the highest long-term payoff.
+
+**J. Make CI real.** Install `shellcheck` in your workflow and run it against `snapcap.sh`. This is your first real CI step and it will catch actual bugs.
+
+**K. Split `Snapcap` class responsibilities.** Recording, snapshotting, cursor management, debug, and background clearing are five different concerns in one class. Splitting them is a multi-session refactor, but it's where architectural thinking actually develops.
+
+---
+
+## The Narrative From Your Comments
+
+Reading your code and comments together as a single document, here's what they tell:
+
+---
+
+You started with a problem: your generative art sketches were generating beautiful frames and you had no reliable way to capture them. The output was ephemeral. You wanted permanence.
+
+The earliest commits show someone setting up the scaffolding of a "real" repository -- GitHub Actions, issue templates, a security policy. You were learning what professional software infrastructure looks like by copying its shape. The workflow runs `echo Hello, world!`. The issue templates are GitHub defaults. But you put them there anyway, because you were building the habits of the discipline, not just the code.
+
+Then the build phase: you extracted `snapcap` from a larger project called "utiliplate" -- the name itself a signal that you were building reusable pieces for your creative practice. You moved fast. Features appeared rapidly: frame recording, timestamp directories, cursor hiding, debug mode. The commits show a mind moving faster than the code can organize itself.
+
+The `notes.pde` file is the most honest artifact in the repository. It's a working journal embedded in the source. *"TGA is the fastest image format,"* you wrote. *"Resets frame# to ZERO only at sketch start to avoid duplicating frame.000001."* These aren't notes for other developers. They're notes for you, six months from now, when you've forgotten why you made the choice. The comment style is someone thinking out loud at a workbench.
+
+Then something slowed you down. The commit `5ef8c3b` reads: *"Took hours to figure out how to remove the niko-test movie file. In the end I backed up snapcap, deleted it, recloned it, then moved the processing scripts back."* You committed a large binary by mistake. You didn't know about `git filter-branch` or `git rebase -i` or BFG Repo Cleaner. So you did what anyone would do when the tool fails them -- you worked around it by hand. And then, crucially, **you documented the struggle.** You didn't pretend it was easy. The commit message is a log entry, not a press release.
+
+The refinement phase followed: *"Refactor everything." "Clarify function name." "Simplified GLOBALS."* You were feeling the weight of the mess you'd built in the build phase and you were paying it down, one commit at a time. The commits got smaller and more surgical -- a sign of growing craft.
+
+And then, embedded in `notes.pde`, the TODOs that were never finished:
+
+```
+[ ] Use green/red tint to show recordIsOn state
+[ ] Add documentation to README
+[ ] Write bash script that adds snapcap_util boilerplate to Processing sketch
+```
+
+These are not failures. They're the edge of what was possible at the time. The code was working. The creative work was calling. The TODOs stayed.
+
+The `//TODO: Remove hardcoded PGraphic vars` comment wrapping the broken `templatelayer` reference is the most telling line in the entire codebase. You knew the code was wrong when you wrote it. You flagged it yourself. And then you moved on, because the tool was functional enough to use -- and that was enough, right then.
+
+This is the essential tension in the work of a creative-technologist: the tool exists in service of the creative practice. When the tool works well enough, the practice calls louder than the refactor. The debt accumulates not from laziness but from priority. The art came first. The code came second. That's not a bug in your values -- it's a feature.
 
 ---
 
 ## Bottom Line
 
-You write code like an artist who respects their tools -- with personality, visual intention, and honest documentation of the process. The weaknesses are the predictable ones of a self-taught coder (globals, duplication, missing error handling, no tests). The strengths are less common: genuine separation of concerns instinct, excellent naming for booleans, a file organization scheme that clearly comes from real-world use, and the discipline to refactor when things get messy. The path forward is less about learning new features and more about deepening the engineering habits you've already started developing.
+You write code like a visual artist who respects their tools: with personality, visual intention, and honest documentation of the process. The weaknesses are exactly the predictable ones of a self-directed learner without a senior reviewer (globals, duplication, missing error handling, unfinished stubs). The strengths are less common: genuine file-separation instinct, excellent boolean naming, a file organization scheme that clearly came from real-world use, and the discipline to refactor when the mess became intolerable.
+
+The path forward isn't learning new features. It's **deepening the engineering habits you've already started**. Fix the bug, kill the duplication, name the methods honestly, guard the bash scripts. Do those four things and you'll have internalized the four most important beginner-to-intermediate transitions in software craft.
