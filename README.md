@@ -35,6 +35,28 @@ flowchart TD
 
 Snapcap runs on its own once it's created: Processing calls it after every `draw()` and on every key press. Frames are film, one folder per take, ready to turn into video. Snaps are stills, one flat folder per version. Both are labeled with the git version that made them.
 
+## Start a new project
+
+`snap_new_project` makes a ready-to-run sketch with Snapcap already wired in:
+
+```bash
+source snapcap.sh                        # or via snapcap.cfg
+snap_new_project myArt v0.1.0 ~/sketches # leave any part out to be asked
+```
+
+```
+~/sketches/myArt/
+    README.md
+    .gitignore           frames/ and snaps/ stay out of git
+    .snapcap             which snapcap release it came from
+    myArt/myArt.pde      starter sketch, already calling new Snapcap("myArt")
+    myArt/Snapcap.pde
+```
+
+It also runs `git init`, commits, and tags the first commit `v0.1.0`, so the first frames you record are already labeled with that version. The parent folder defaults to `$SNAP_PROJECTS_DIR`, then `$JAY_SPACE`, then the current directory. The starter files live in `template/`; edit them to change what every new project starts with.
+
+Without sourcing: `./snapcap.sh snap_new_project myArt`.
+
 ## Use it in a sketch
 
 Copy `snapcap_util/Snapcap.pde` into your sketch folder as a new tab, then add one line to `setup()`:

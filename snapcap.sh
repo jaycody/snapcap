@@ -3,17 +3,117 @@
 ########### BASH TOOLS FOR SNAPCAP ##############
 
 
-###### INITIATE A NEW PROJECT #######
-  snap_create_project () {
-      echo -n "Project name: "
-      read PROJECT
-      echo -n "Project: $PROJECT"
+# Where this repo lives, so the functions work from any directory.
+# ${BASH_SOURCE[0]} under bash, $0 when sourced from zsh.
+SNAPCAP_HOME="${SNAPCAP_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}"
 
-      echo ""
-      echo -n "Create a new directory in .../jaycody/ for proj: $PROJECT? [y/n]"
-      read directoryIsOn
-      echo -n "Creating directory: ..../jaycody/${PROJECT}/"
-      #exit
+
+###### START A NEW PROJECT #######
+# Creates a ready-to-run Processing sketch with Snapcap built in:
+#
+#   <parent>/<name>/
+#       README.md
+#       .gitignore          frames/ and snaps/ stay out of git
+#       .snapcap            which snapcap release it came from
+#       <name>/<name>.pde   starter sketch, already calling new Snapcap
+#       <name>/Snapcap.pde  copied from snapcap_util
+#
+# then runs git init, commits, and tags <version>, so the very first
+# frames are labeled with it.
+#
+# Usage:  snap_new_project [name] [version] [parent dir]
+#   Anything left out is asked for. The parent defaults to
+#   $SNAP_PROJECTS_DIR, then $JAY_SPACE, then the current directory.
+snap_new_project () {
+    local name="$1" version="$2" parent="$3"
+    local default_parent="${SNAP_PROJECTS_DIR:-${JAY_SPACE:-$PWD}}"
+
+    if [ -z "$name" ]; then
+        printf "Project name (letters, digits, _): "
+        read -r name
+    fi
+    # Processing needs the sketch folder and main .pde to share this name,
+    # and it must be a valid Java identifier.
+    case "$name" in
+        ''|[0-9]*|*[!A-Za-z0-9_]*)
+            echo "snap_new_project: '$name' won't work as a Processing sketch name." >&2
+            echo "  Use letters, digits and _, starting with a letter." >&2
+            return 1 ;;
+    esac
+
+    if [ -z "$version" ]; then
+        printf "Version [v0.1.0]: "
+        read -r version
+        version="${version:-v0.1.0}"
+    fi
+    case "$version" in
+        *[!A-Za-z0-9._-]*)
+            echo "snap_new_project: version '$version' can only use letters, digits, '.', '_' and '-'." >&2
+            return 1 ;;
+    esac
+
+    if [ -z "$parent" ]; then
+        printf "Create it in [%s]: " "$default_parent"
+        read -r parent
+        parent="${parent:-$default_parent}"
+    fi
+    if [ ! -d "$parent" ]; then
+        echo "snap_new_project: no such directory: $parent" >&2
+        return 1
+    fi
+
+    local dest="${parent%/}/$name"
+    if [ -e "$dest" ]; then
+        echo "snap_new_project: $dest already exists, leaving it alone." >&2
+        return 1
+    fi
+
+    local release today
+    release="$(git -C "$SNAPCAP_HOME" describe --tags --always --dirty 2>/dev/null || echo unknown)"
+    today="$(date +%Y-%m-%d)"
+
+    echo ""
+    echo "Creating $dest"
+    echo "  project: $name"
+    echo "  version: $version"
+    echo "  snapcap: $release"
+    echo ""
+
+    # Copy only the files a new sketch needs (no .git, demo layers or notes).
+    mkdir -p "$dest/$name" || return 1
+    cp "$SNAPCAP_HOME/snapcap_util/Snapcap.pde" "$dest/$name/Snapcap.pde" || return 1
+    cp "$SNAPCAP_HOME/template/gitignore" "$dest/.gitignore" || return 1
+    _snap_fill "$SNAPCAP_HOME/template/sketch.pde" "$dest/$name/$name.pde" \
+        "$name" "$version" "$release" "$today" || return 1
+    _snap_fill "$SNAPCAP_HOME/template/README.md" "$dest/README.md" \
+        "$name" "$version" "$release" "$today" || return 1
+    printf "snapcap %s\ncreated %s\n" "$release" "$today" > "$dest/.snapcap"
+
+    # Tag the first commit so Snapcap labels output with $version right away.
+    if command -v git >/dev/null 2>&1; then
+        git -C "$dest" init -q &&
+        git -C "$dest" add -A &&
+        git -C "$dest" commit -q -m "Start $name from snapcap $release" &&
+        git -C "$dest" tag "$version" &&
+        echo "git: initialized, first commit tagged $version" ||
+        echo "git: repo created, but the first commit or tag failed (is git user.name/user.email set?)" >&2
+    else
+        echo "git not found: output will be labeled 'nogit' until the project is in a git repo." >&2
+    fi
+
+    echo ""
+    echo "Open $dest/$name/$name.pde in Processing and press Run."
+    echo ""
+}
+
+# Copy a template, swapping in the project's details.
+# Inputs are already validated, so they're safe inside sed.
+_snap_fill () {
+    sed -e "s|__PROJECT__|$3|g" \
+        -e "s|__VERSION__|$4|g" \
+        -e "s|__SNAPCAP_RELEASE__|$5|g" \
+        -e "s|__DATE__|$6|g" \
+        "$1" > "$2"
 }
 
 
@@ -73,3 +173,9 @@ snap_clean_all () {
     echo ""
 }
 
+
+
+# Run directly instead of sourced:  ./snapcap.sh snap_new_project myProj
+if [ "${BASH_SOURCE[0]:-}" = "$0" ] && [ $# -gt 0 ]; then
+    "$@"
+fi
