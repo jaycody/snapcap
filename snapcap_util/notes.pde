@@ -1,6 +1,6 @@
 /*////////////////////////////////////////////////////////////
  **** TODO ****
- [ ] Use green/red tint to show recordIsOn state (implement after the saveFrame)
+ [x] Show recording state on screen (red REC dot, drawn after the save)
  [ ] Add documentation to README
  [ ] Write bash script that adds snapcap_util boilerplate to Procesing sketch
  

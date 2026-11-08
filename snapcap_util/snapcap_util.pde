@@ -10,40 +10,30 @@
  *******************************************************************/
 
 ////////////////////////////////////////////////////////////
-///// GLOBALS for snapcap IDs
-String   PROJ           = "snapcap";
-String   VERSION        = "ver1_0_0";
-String   SNAP_ROOT      = ("./snaps/");
-String   FRAME_ROOT     = ("./frames/");
-String   SNAP_PATH      = SNAP_ROOT + VERSION + "/" + PROJ;
-////////////////////////////////////////////////////////////
-///// GLOBALS for keyEvents
-char     currentKey;
-int      currentKeyCode = -1;
-boolean  DEBUG = true;
+///// Project name used to label snaps and frames.
+///// The version comes from git automatically.
+String   PROJ    = "snapcap";
 ////////////////////////////////////////////////////////////
 
-Snapcap       snapcap;
+Snapcap    snapcap;
 ImageLayer imagelayer;
 
 void setup() {
   size(1280, 480, P2D);
 
-  snapcap         = new Snapcap();
-  imagelayer      = new ImageLayer();
+  // One line. Snapcap hooks itself into draw() and the keyboard.
+  snapcap    = new Snapcap(PROJ);
+  imagelayer = new ImageLayer();
 }
 
 void draw() {
-
   /*******************************
-  * MAGIC HERE /////////////*/
+   * MAGIC HERE /////////////*/
   imagelayer.ready();
   //*******************************
 
+  // Demo of a held-down key (see keyEVENTS.pde)
+  checkForRepeatingKey();
 
-  /*******************************
-   * SNAP HERE ////////////
-   * ----> always final draw step*/
-  snapcap.ready();
-  //*******************************
+  // No snapcap call needed: it captures after draw() on its own.
 }
