@@ -1,0 +1,8 @@
+.DS_Store
+applet
+application.*
+out
+frames
+snaps
+*.tif
+*.tga

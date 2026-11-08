@@ -2,7 +2,7 @@
  **** TODO ****
  [x] Show recording state on screen (red REC dot, drawn after the save)
  [ ] Add documentation to README
- [ ] Write bash script that adds snapcap_util boilerplate to Procesing sketch
+ [x] Write bash script that adds snapcap_util boilerplate to Procesing sketch (snap_new_project)
  
 //////////////////////////////////////////////////////////////
  **** USAGE **** 
