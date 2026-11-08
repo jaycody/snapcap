@@ -7,32 +7,30 @@ A tool for recording, labeling, and organizing animation frames from Processing 
 
 ```mermaid
 flowchart TD
-    A["setup(): new Snapcap(&quot;myProject&quot;)"] --> G["Ask git for the version<br/>git describe → v1.1.0-2-g47fc45b-dirty<br/>(nogit if git isn't found)"]
-    G --> R["Register hooks with Processing<br/>registerMethod draw + keyEvent"]
+    A["setup: new Snapcap with your project name"] --> G["Ask git for the version<br/>for example v1.1.0-2-g47fc45b-dirty<br/>or nogit if git is not found"]
+    G --> R["Register hooks with Processing<br/>registerMethod draw and keyEvent"]
 
-    subgraph EVERY["Every frame, automatically"]
-        direction TB
-        D1["Your draw() makes the art"] --> D2["Snapcap's draw() runs right after"]
+    subgraph EVERY ["Every frame, automatically"]
+        D1["Your draw makes the art"] --> D2["Snapcap draw runs right after"]
         D2 --> Q{"Recording?"}
-        Q -- yes --> SF["saveFrame() → one TIFF"]
-        Q -- no --> OV
-        SF --> OV["Draw the REC / status overlay<br/>after the save, so it's never captured"]
+        Q -->|yes| SF["saveFrame writes one TIFF"]
+        Q -->|no| OV["Draw the REC overlay<br/>after the save, so it is never captured"]
+        SF --> OV
     end
 
-    subgraph KEYS["On key press, alongside your keyPressed()"]
-        direction TB
+    subgraph KEYS ["On key press, alongside your keyPressed"]
         K{"Which key?"}
-        K -- "r" --> T["Start or stop a take<br/>new folder named by its start time"]
-        K -- "ENTER" --> S["save() → one snap"]
-        K -- "d / i" --> H["Toggle overlay / print key list"]
+        K -->|r| T["Start or stop a take<br/>new folder named by its start time"]
+        K -->|ENTER| S["save writes one snap"]
+        K -->|d or i| H["Toggle overlay or print key list"]
     end
 
-    R --> EVERY
-    R --> KEYS
-    T -. "switches recording on/off" .-> Q
+    R --> D1
+    R --> K
+    T -.->|switches recording| Q
 
-    SF --> FR[("frames/{version}/{take start}/<br/>{time}-{frameCount}.tif")]
-    S --> SN[("snaps/{version}/<br/>{project}-{time}-{millis}-{version}.tif")]
+    SF --> FR[("frames / VERSION / TAKE START TIME /<br/>TIME-FRAMECOUNT.tif")]
+    S --> SN[("snaps / VERSION /<br/>PROJECT-TIME-MILLIS-VERSION.tif")]
 ```
 
 Snapcap runs on its own once it's created: Processing calls it after every `draw()` and on every key press. Frames are film, one folder per take, ready to turn into video. Snaps are stills, one flat folder per version. Both are labeled with the git version that made them.
