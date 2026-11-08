@@ -12,13 +12,15 @@ Snapcap snapcap;
 
 void setup() {
   size(1280, 480, P2D);
-  snapcap = new Snapcap("myProject", "v1");
+  snapcap = new Snapcap("myProject");
 }
 
 void draw() {
   // your art; no snapcap call needed
 }
 ```
+
+The version is read from git (`git describe --tags --always --dirty`), so output is labeled with the exact commit that made it, for example `v1.1.0-2-g47fc45b-dirty`. Outside a git repo it falls back to `nogit`. To set it by hand: `new Snapcap("myProject", "v2")`.
 
 Snapcap hooks itself into the sketch with `registerMethod`, so it always captures after your `draw()` and reads keys without touching your `keyPressed()`.
 

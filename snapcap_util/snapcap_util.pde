@@ -10,9 +10,9 @@
  *******************************************************************/
 
 ////////////////////////////////////////////////////////////
-///// Project info used to label snaps and frames
+///// Project name used to label snaps and frames.
+///// The version comes from git automatically.
 String   PROJ    = "snapcap";
-String   VERSION = "ver1_1_0";
 ////////////////////////////////////////////////////////////
 
 Snapcap    snapcap;
@@ -22,7 +22,7 @@ void setup() {
   size(1280, 480, P2D);
 
   // One line. Snapcap hooks itself into draw() and the keyboard.
-  snapcap    = new Snapcap(PROJ, VERSION);
+  snapcap    = new Snapcap(PROJ);
   imagelayer = new ImageLayer();
 }
 

@@ -3,9 +3,10 @@
  *
  * Snapcap wires itself into the sketch. Create it once in setup():
  *
- *     snapcap = new Snapcap(PROJ, VERSION);
+ *     snapcap = new Snapcap(PROJ);
  *
- * and that's it. No snapcap.ready() at the bottom of draw(), and no
+ * and that's it. The version comes from git (see gitVersion() below).
+ * To set it by hand instead:  new Snapcap(PROJ, "v2"). No snapcap.ready() at the bottom of draw(), and no
  * key routing from keyPressed(). Processing calls Snapcap on its own:
  *   * draw()     runs right after the sketch's draw(), so frames are
  *                always captured last.
@@ -37,9 +38,20 @@ public class Snapcap {
   char     recordKey = 'r';
   boolean  keysOn    = true;
 
+  // Version detected from git
+  Snapcap(String project) {
+    configure(project, gitVersion());
+  }
+
+  // Version set by hand
   Snapcap(String project, String version) {
+    configure(project, version);
+  }
+
+  void configure(String project, String version) {
     this.project = project;
     this.version = version;
+    println("snapcap: " + project + " @ " + version);
 
     registerMethod("draw", this);
     registerMethod("keyEvent", this);
@@ -105,6 +117,30 @@ public class Snapcap {
     save(snapID);
     println("\n\tOHH SNAAAP ---> " + snapID + "\n");
     return snapID;
+  }
+
+  /*//////////////////////////////////////////////////
+   VERSION FROM GIT, via `git describe --tags --always --dirty`:
+     v1.0.0                     exactly on a tag
+     v1.0.0-3-g47fc45b          3 commits past the tag
+     v1.0.0-3-g47fc45b-dirty    ...with uncommitted edits
+     47fc45b                    no tags yet
+   Falls back to "nogit" when git or the repo can't be found
+   (an exported app, a machine without git). */
+  String gitVersion() {
+    try {
+      Process git = new ProcessBuilder("git", "describe", "--tags", "--always", "--dirty")
+        .directory(new File(sketchPath()))
+        .redirectErrorStream(true)
+        .start();
+      String out = new BufferedReader(new InputStreamReader(git.getInputStream())).readLine();
+      if (git.waitFor() == 0 && out != null && out.trim().length() > 0) {
+        return out.trim().replace('/', '_');  // a tag like "release/1.0" must not add folders
+      }
+    }
+    catch (Exception e) {
+    }
+    return "nogit";
   }
 
   /*//////////////////////////////////////////////////
