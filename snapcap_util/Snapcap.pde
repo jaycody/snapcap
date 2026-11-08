@@ -1,233 +1,151 @@
-class Snapcap {
-  boolean  recordIsOn =         false;
-  boolean  cursorIsOn =         true;
-  String   sequenceStartTime =  "";
+/*******************************************************************
+ * Snapcap: captures and organizes graphics output... in a snap ;)
+ *
+ * Snapcap wires itself into the sketch. Create it once in setup():
+ *
+ *     snapcap = new Snapcap(PROJ, VERSION);
+ *
+ * and that's it. No snapcap.ready() at the bottom of draw(), and no
+ * key routing from keyPressed(). Processing calls Snapcap on its own:
+ *   * draw()     runs right after the sketch's draw(), so frames are
+ *                always captured last.
+ *   * keyEvent() sees every key press, alongside the sketch's own
+ *                keyPressed().
+ *
+ * Keys:   'r' start/stop recording a frame sequence
+ *         ENTER  snap a single frame
+ *         'd' toggle the on-screen status (not captured)
+ *         'i' print these instructions
+ *
+ * Output:
+ *   snaps:   <snapRoot>/<VERSION>/<PROJ>-yyyymmdd-hhmmss-<millis>-<VERSION>.tif
+ *   frames:  <frameRoot>/<VERSION>/yyyymmdd-hhmmss/yyyymmdd-hhmmss-#######.tif
+ *            (one folder per recording, named by its start time)
+ *******************************************************************/
 
-  Snapcap () {
-    textAlign(CENTER, CENTER);
-    textSize(30);
+// Declared public so Processing can find and call draw() and keyEvent().
+public class Snapcap {
+  String   project;
+  String   version;
+  String   snapRoot  = "./snaps/";
+  String   frameRoot = "./frames/";
+
+  boolean  recordIsOn    = false;
+  boolean  showStatus    = true;
+  String   sequencePath  = "";
+
+  char     recordKey = 'r';
+  boolean  keysOn    = true;
+
+  Snapcap(String project, String version) {
+    this.project = project;
+    this.version = version;
+
+    registerMethod("draw", this);
+    registerMethod("keyEvent", this);
 
     printInstructions();
   }
 
   /*//////////////////////////////////////////////////
-   MONITOR and CAPTURE FRAME SEQUENCE */
-  // MONITOR recordIsOn from drawloop (is recordIsOn?, is recordIsOn?,... ?)
-  void ready() {
-    checkRecordFrame();
-    checkForRepeatingKey();
-  }
-  // CAPTURE FRAMES if recordIsOn
-  void checkRecordFrame() {
+   CALLED BY PROCESSING after every sketch draw() */
+  public void draw() {
     if (recordIsOn) {
-      saveFrame(getFrameID() + "#######.tif");
-
-      // Print text to the main graphics screen
-      if (DEBUG) {
-        fill(0);
-        text("DEBUG: ON \nFrame Record: ON\n" + sequenceStartTime, 0, 0, width, height);
-      }
+      saveFrame(sequencePath + timestamp(true) + "-#######.tif");
+    }
+    // Drawn after the save, so it shows on screen but never in a frame.
+    if (showStatus) {
+      drawStatus();
     }
   }
-  //  END: CAPTURE FRAME SEQUENCE
-  //////////////////////////////////////////////////
-
 
   /*//////////////////////////////////////////////////
-   TAKE SNAPSHOT  !!!! CALLED on <ENTER> from keyEVENTS.pde
-   * snapID = SNAP_PATH + timestamp
-   * TAKE SNAP, save it as <snapID>; hide cursor if needed. */
-  String snapScreen() {
-    return snapScreen(null);
-  }
-  String snapScreen(String snapID) {
-    // Fetch snap's ID if none given.
-    if (snapID == null) {
-      snapID = getSnapID();
-    }
-    // Take a snap, but hide and return cursor if needed.
-    if (cursorIsOn) {
-      toggleCursor();
-      save(snapID);       // <---------------------------TAKE SNAPSHOT
-      toggleCursor();
-    } else {
-      save(snapID);       // <---------------------------TAKE SNAPSHOT
-    }
-    println("\n\tOHH SNAAAP ---> " + snapID + ".tif\n");
-    return snapID;
-  }
-  //  END: SNAP-a-SHOT
-  //////////////////////////////////////////////////
-
-
-  /*//////////////////////////////////////////////////
-   GET IDs for sequence, frame, and snap */
-  // snapID = SNAP_PATH + snapTime
-  String getSnapID() {
-    return SNAP_PATH + getSnapTime();
-  }
-
-  // snapTime = timestamp + version
-  String getSnapTime() {
-    return
-      nf(year(), 4)   + nf(month(), 2)  + nf(day(), 2)    + "-" +  // yyyymmdd-
-      nf(hour(), 2)   + nf(minute(), 2) + nf(second(), 2) + "-" +  // hrmmss-
-      nf(millis(), 6) + VERSION;
-  }
-
-  // frameID = FRAME_ROOT + sequenceID + frameTime + frameCount
-  String getFrameID() {
-    return FRAME_ROOT + sequenceStartTime + getFrameTime();
-  }
-
-  // frameTime = timestamp to the second
-  String getFrameTime() {
-    return
-      nf(year(), 4) + nf(month(), 2)  + nf(day(), 2)    + "-" +
-      nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + "-";
-  }
-
-  // sequenceStartTime = defines PATH VERSION/timestamp/ to sequence frames
-  String getSequenceStartTime() {
-    return VERSION + "/" +
-      nf(year(), 4) + nf(month(), 2)  + nf(day(), 2)    + "-" +
-      nf(hour(), 2) + nf(minute(), 2) + "/";
-  }
-
-  //  END: GET IDs
-  //////////////////////////////////////////////////
-
-
-  /*/////////////////////////////////////////////////
-   TOGGLE: recordIsOn [Initiated by switch case 'r' in keyEVENTS]
-   * Get sequence ID [<VERSION>/<yyyymmdd-hhmm>/<yyyymmdd-hhmmss->]
-   * Toggle global: recordIsOn, then show me its state, and if on, show path too.
-   * SEQUENCE START-TIME remains until next toggle; (else new dir for every frame ;)
-   * Meanwhile frameID within sequence increments with frame count.*/
-  void toggleRecording () {
-    sequenceStartTime = getSequenceStartTime();
-    recordIsOn = !recordIsOn;
-    println("\n****************************");
-    println("*** recordIsOn = " + recordIsOn + " ***");
-    if (recordIsOn) {
-      println ("PATH TO SEQUENCE FRAMES ---> " + FRAME_ROOT + sequenceStartTime);
-    }
-    println("****************************\n" + "\n");
-  }
-  //  END: TOGGLE RECORDING
-  //////////////////////////////////////////////////
-
-  //////////////////////////////////////////////////
-  //  TOGGLE CURSOR  =  'c'
-  void toggleCursor () {
-    cursorIsOn = !cursorIsOn;
-    if (cursorIsOn) {
-      cursor();
-      println("*** Cursor VISIBLE again. ***");
-    } else {
-      noCursor();
-      println("*** Cursor HIDDEN for screenshot ***");
-      println("\t---> Screenshot SNAPPED!! <---");
-    }
-  }
-  //  END: TOGGLE CURSOR
-  //////////////////////////////////////////////////
-
-  //////////////////////////////////////////////////
-  //  TOGGLE DEBUG  =  'd'
-  void toggleDEBUG () {
-    DEBUG = !DEBUG;
-    if (DEBUG) {
-      println("*** DEBUG: ON ***");
-    } else {
-      println("*** DEBUG: OFF ***");
-    }
-  }
-  //  END: TOGGLE DEBUG
-  //////////////////////////////////////////////////
-
-
-  //////////////////////////////////////////////////
-  // <TAB> Wipe the PGraphic:: <SPACE> Wipe Background
-  void clearBackground(int key_pressed) {
-    // If spacebar, then clear background screen
-    if (key_pressed == 32) {
-      background(0);
-    } else {
-//TODO: Remove hardcoded PGraphic vars      ///////////////////////
-      clearPGraphic(templatelayer.offScreenBuffer);
-      clearPGraphic(templatelayer.displayLayer);
-//TODO: Remove hardcoded PGraphic vars      ///////////////////////
-    }
-  }
-  //////////////////////////////////////////////////
-
-  //////////////////////////////////////////////////
-  //  <TAB> = WIPE a specific PGraphics layer
-  //     Can set individual layers to transparent!!!!!
-  void clearPGraphic(PGraphics p) {
-    p.beginDraw();
-    p.clear();
-    p.endDraw();
-  }
-  //  END: MAKE PIXELS CLEAR
-  //////////////////////////////////////////////////
-
-
-
-  //////////////////////////////////////////////////
-  void printInstructions() {
-    println("");
-    println("                 Keyboard controls");
-    println("          -----------------------------------");
-    println("   <ENTER> SNAP the screen and save to " + SNAP_ROOT);
-    println("   <TAB>   Make background transparent");
-    println("   'r'     toggle screen recording");
-    println("   'c'     toggle cursor");
-    println("   'w'     momentary switch, stays engaged until released");
-    println("   'i'     Print instructions to console");
-
-    println("          -----------------------------------");
-    println("");
-  }
-  //////////////////////////////////////////////////
-
-
-
-  /*////////////////////////////////////////////////////
-   //  CREATE REPEATING BUTTONS
-   //  ------> CALLED IN THE DRAW LOOP <------------------*/
-  void checkForRepeatingKey() {
-    /* This function runs only if:
-     * Key being pressed is specified in this function,
-     * This function shuts down when:
-     * ...when keyRelease() sets currentKeyCode to -1
-     * or when key pressed is not specified here
-     ////////////////////////////////////////////////////*/
-
-    // ALLOW SPECIFIC KEY TO REPEAT
-    //    RETURN if NO keyPressed
-    //    RETURN if keyPressed but key is not 'w'
-    //    EXECUTE CODE if 'w' is pressed
-    if ((currentKeyCode == -1) || !(currentKey == 'w')) {
-      //clearButtons();
+   CALLED BY PROCESSING on every key event */
+  public void keyEvent(processing.event.KeyEvent e) {
+    if (!keysOn || e.getAction() != processing.event.KeyEvent.PRESS) {
       return;
     }
-
-    /////////////////////////////////////////////////
-    //  SHOW REPEATING KEY: (good for selecting source images)
-    if (currentKey == 'w') {
-      println("'" + currentKey + "' isA repeating key. Use it wisely! (eg. selecting source image)");
+    char k = e.getKey();
+    if (k == recordKey) {
+      toggleRecording();
+    } else if (k == ENTER || k == RETURN) {
+      snapScreen();
+    } else if (k == 'd') {
+      showStatus = !showStatus;
+    } else if (k == 'i') {
+      printInstructions();
     }
-
-    //////////////////////////////////////////////////
-    if (DEBUG) {
-      println("\nDEBUG: On draw loop, from checkForRepeatingKey()");
-      println("\t---> SYSTEM: Key pressed = '" + key + "'  \tSYSTEM: keyCode    \t  = " + keyCode);
-      println("\t---> GLOBAL: currentKey  = '" + currentKey + "' \tGLOBAL: currentKeyCode = " + currentKeyCode + "\n");
-    }
-    //////////////////////////////////////////////////
   }
-  //  END checkForRepeatingKey()
-  /////////////////////////////////////////////////////////////
+
+  /*//////////////////////////////////////////////////
+   SETTINGS: call these from setup() if the defaults don't fit */
+  void setRecordKey(char k)       { recordKey = k; }
+  void keysOff()                  { keysOn = false; }
+  void setSnapRoot(String path)   { snapRoot = withSlash(path); }
+  void setFrameRoot(String path)  { frameRoot = withSlash(path); }
+
+  /*//////////////////////////////////////////////////
+   RECORD: each recording gets its own folder, named by its start time,
+   so stopping and starting again never overwrites an earlier take. */
+  void toggleRecording() {
+    recordIsOn = !recordIsOn;
+    if (recordIsOn) {
+      sequencePath = frameRoot + version + "/" + timestamp(true) + "/";
+      println("\n*** Recording ON ---> " + sequencePath + "\n");
+    } else {
+      println("\n*** Recording OFF ***\n");
+    }
+  }
+
+  /*//////////////////////////////////////////////////
+   SNAP: save the current frame as a single image */
+  String snapScreen() {
+    String snapID = snapRoot + version + "/" + project + "-"
+      + timestamp(true) + "-" + nf(millis(), 6) + "-" + version + ".tif";
+    save(snapID);
+    println("\n\tOHH SNAAAP ---> " + snapID + "\n");
+    return snapID;
+  }
+
+  /*//////////////////////////////////////////////////
+   HELPERS */
+  // yyyymmdd-hhmm, or yyyymmdd-hhmmss with seconds
+  String timestamp(boolean withSeconds) {
+    String stamp = nf(year(), 4) + nf(month(), 2) + nf(day(), 2) + "-"
+      + nf(hour(), 2) + nf(minute(), 2);
+    return withSeconds ? stamp + nf(second(), 2) : stamp;
+  }
+
+  String withSlash(String path) {
+    return path.endsWith("/") ? path : path + "/";
+  }
+
+  void drawStatus() {
+    pushStyle();
+    noStroke();
+    textAlign(LEFT, TOP);
+    textSize(14);
+    if (recordIsOn) {
+      fill(255, 0, 0);
+      ellipse(16, 16, 12, 12);
+      fill(255);
+      text("REC  " + sequencePath, 28, 8);
+    } else {
+      fill(255, 120);
+      text("snapcap: 'r' record, ENTER snap, 'd' hide", 10, 8);
+    }
+    popStyle();
+  }
+
+  void printInstructions() {
+    println("");
+    println("                 snapcap keys");
+    println("          -----------------------------------");
+    println("   '" + recordKey + "'     start/stop recording frames to " + frameRoot + version + "/");
+    println("   <ENTER> snap a single frame to " + snapRoot + version + "/");
+    println("   'd'     show/hide the on-screen status");
+    println("   'i'     print these instructions");
+    println("          -----------------------------------");
+    println("");
+  }
 }
