@@ -24,6 +24,10 @@ SNAPCAP_HOME="${SNAPCAP_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}
 # Usage:  snap_new_project [name] [version] [parent dir]
 #   Anything left out is asked for. The parent defaults to
 #   $SNAP_PROJECTS_DIR, then $JAY_SPACE, then the current directory.
+#
+# If $SNAP_STORAGE_DIR is set (say ~/Dropbox/_SNAPS), frames/ and snaps/
+# are symlinks into $SNAP_STORAGE_DIR/<name>/, so big image files land in
+# central storage instead of next to the code.
 snap_new_project () {
     local name="$1" version="$2" parent="$3"
     local default_parent="${SNAP_PROJECTS_DIR:-${JAY_SPACE:-$PWD}}"
@@ -88,6 +92,15 @@ snap_new_project () {
     _snap_fill "$SNAPCAP_HOME/template/README.md" "$dest/README.md" \
         "$name" "$version" "$release" "$today" || return 1
     printf "snapcap %s\ncreated %s\n" "$release" "$today" > "$dest/.snapcap"
+
+    if [ -n "$SNAP_STORAGE_DIR" ]; then
+        local store="${SNAP_STORAGE_DIR%/}/$name"
+        mkdir -p "$store/frames" "$store/snaps" &&
+        ln -s "$store/frames" "$dest/$name/frames" &&
+        ln -s "$store/snaps" "$dest/$name/snaps" &&
+        echo "storage: frames/ and snaps/ link to $store/" ||
+        echo "storage: couldn't link frames/ and snaps/ to $store/" >&2
+    fi
 
     # Tag the first commit so Snapcap labels output with $version right away.
     if command -v git >/dev/null 2>&1; then

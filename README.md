@@ -53,7 +53,9 @@ snap_new_project myArt v0.1.0 ~/sketches # leave any part out to be asked
     myArt/Snapcap.pde
 ```
 
-It also runs `git init`, commits, and tags the first commit `v0.1.0`, so the first frames you record are already labeled with that version. The parent folder defaults to `$SNAP_PROJECTS_DIR`, then `$JAY_SPACE`, then the current directory. The starter files live in `template/`; edit them to change what every new project starts with.
+It also runs `git init`, commits, and tags the first commit `v0.1.0`, so the first frames you record are already labeled with that version. The parent folder defaults to `$SNAP_PROJECTS_DIR`, then `$JAY_SPACE`, then the current directory.
+
+Set `SNAP_STORAGE_DIR` (for example `~/Dropbox/_SNAPS`) and the sketch's `frames/` and `snaps/` become links into `$SNAP_STORAGE_DIR/myArt/`, so the image files land in central storage instead of next to the code. The starter files live in `template/`; edit them to change what every new project starts with.
 
 Without sourcing: `./snapcap.sh snap_new_project myArt`.
 

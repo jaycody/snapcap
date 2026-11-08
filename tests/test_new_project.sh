@@ -21,9 +21,15 @@ check "sketch calls new Snapcap"        'grep -q "new Snapcap(\"myArt\")" "$P/my
 check "no placeholders left"            '! grep -rq "__[A-Z_]*__" "$P/README.md" "$P/myArt"'
 check "README names the project"        'grep -q "^# myArt" "$P/README.md"'
 check "snapcap release recorded"        'grep -q "^snapcap " "$P/.snapcap"'
-check "frames and snaps ignored"        'grep -q "^frames/" "$P/.gitignore"'
+check "frames and snaps ignored"        'grep -q "^frames$" "$P/.gitignore"'
 check "demo files not copied"           '[ ! -e "$P/myArt/ImageLayer.pde" ]'
 check "git version is the tag"          '[ "$(git -C "$P/myArt" describe --tags --always --dirty)" = "v0.3.0" ]'
+
+# Central storage: frames/ and snaps/ become symlinks
+SNAP_STORAGE_DIR="$TMP/store" snap_new_project linked v1 "$TMP" > /dev/null
+check "frames link to storage"  '[ -L "$TMP/linked/linked/frames" ] && [ -d "$TMP/store/linked/frames" ]'
+check "snaps link to storage"   '[ -L "$TMP/linked/linked/snaps" ] && [ -d "$TMP/store/linked/snaps" ]'
+check "links kept out of git"   '[ -z "$(git -C "$TMP/linked" status --porcelain)" ]'
 
 # Interactive prompts, using the default version
 printf "promptArt\n\n%s\n" "$TMP" | snap_new_project > /dev/null
