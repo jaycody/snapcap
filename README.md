@@ -5,33 +5,9 @@ A tool for recording, labeling, and organizing animation frames from Processing 
 
 ## How it works
 
-```mermaid
-flowchart TD
-    A["setup: new Snapcap with your project name"] --> G["Ask git for the version<br/>for example v1.1.0-2-g47fc45b-dirty<br/>or nogit if git is not found"]
-    G --> R["Register hooks with Processing<br/>registerMethod draw and keyEvent"]
+![How Snapcap works: setup, every frame, and key presses](docs/diagrams/how-it-works.png)
 
-    subgraph EVERY ["Every frame, automatically"]
-        D1["Your draw makes the art"] --> D2["Snapcap draw runs right after"]
-        D2 --> Q{"Recording?"}
-        Q -->|yes| SF["saveFrame writes one TIFF"]
-        Q -->|no| OV["Draw the REC overlay<br/>after the save, so it is never captured"]
-        SF --> OV
-    end
-
-    subgraph KEYS ["On key press, alongside your keyPressed"]
-        K{"Which key?"}
-        K -->|r| T["Start or stop a take<br/>new folder named by its start time"]
-        K -->|ENTER| S["save writes one snap"]
-        K -->|d or i| H["Toggle overlay or print key list"]
-    end
-
-    R --> D1
-    R --> K
-    T -.->|switches recording| Q
-
-    SF --> FR[("frames / VERSION / TAKE START TIME /<br/>TIME-FRAMECOUNT.tif")]
-    S --> SN[("snaps / VERSION /<br/>PROJECT-TIME-MILLIS-VERSION.tif")]
-```
+<sub>Source: [docs/diagrams/how-it-works.mmd](docs/diagrams/how-it-works.mmd). After editing it, run `bash docs/diagrams/render.sh`.</sub>
 
 Snapcap runs on its own once it's created: Processing calls it after every `draw()` and on every key press. Frames are film, one folder per take, ready to turn into video. Snaps are stills, one flat folder per version. Both are labeled with the git version that made them.
 
@@ -47,33 +23,9 @@ snap_new_project myArt v0.1.0 ~/sketches   # leave any part out to be asked
 
 ### How the script runs
 
-```mermaid
-flowchart TD
-    A["snap_new_project name version parent"] --> B{"Name given?"}
-    B -->|no| B1["Ask for it"] --> C
-    B -->|yes| C{"Valid sketch name?<br/>letters, digits, _"}
-    C -->|no| X["Stop with a message,<br/>nothing written"]
-    C -->|yes| D{"Version given?"}
-    D -->|no| D1["Ask, default v0.1.0"] --> E
-    D -->|yes| E{"Valid version?"}
-    E -->|no| X
-    E -->|yes| F{"Parent folder given?"}
-    F -->|no| F1["Ask, default SNAP_PROJECTS_DIR<br/>then JAY_SPACE then here"] --> G
-    F -->|yes| G{"Parent exists and<br/>project folder is new?"}
-    G -->|no| X
-    G -->|yes| H["Read snapcap release<br/>git describe in this repo"]
+![How snap_new_project runs](docs/diagrams/new-project.png)
 
-    subgraph BUILD ["Build the project folder"]
-        H --> I["Copy Snapcap.pde<br/>from snapcap_util"]
-        I --> J["Fill templates with name,<br/>version, release, date:<br/>sketch, README, gitignore"]
-        J --> K["Write .snapcap<br/>release and date"]
-    end
-
-    K --> L{"SNAP_STORAGE_DIR set?"}
-    L -->|yes| M["Link frames and snaps<br/>into central storage"] --> N
-    L -->|no| N["git init, commit,<br/>tag the version"]
-    N --> O["Open the .pde in Processing<br/>and press Run"]
-```
+<sub>Source: [docs/diagrams/new-project.mmd](docs/diagrams/new-project.mmd). After editing it, run `bash docs/diagrams/render.sh`.</sub>
 
 Step by step:
 

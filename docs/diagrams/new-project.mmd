@@ -1,0 +1,25 @@
+flowchart TD
+    A["snap_new_project name version parent"] --> B{"Name given?"}
+    B -->|no| B1["Ask for it"] --> C
+    B -->|yes| C{"Valid sketch name?<br/>letters, digits, _"}
+    C -->|no| X["Stop with a message,<br/>nothing written"]
+    C -->|yes| D{"Version given?"}
+    D -->|no| D1["Ask, default v0.1.0"] --> E
+    D -->|yes| E{"Valid version?"}
+    E -->|no| X
+    E -->|yes| F{"Parent folder given?"}
+    F -->|no| F1["Ask, default SNAP_PROJECTS_DIR<br/>then JAY_SPACE then here"] --> G
+    F -->|yes| G{"Parent exists and<br/>project folder is new?"}
+    G -->|no| X
+    G -->|yes| H["Read snapcap release<br/>git describe in this repo"]
+
+    subgraph BUILD ["Build the project folder"]
+        H --> I["Copy Snapcap.pde<br/>from snapcap_util"]
+        I --> J["Fill templates with name,<br/>version, release, date:<br/>sketch, README, gitignore"]
+        J --> K["Write .snapcap<br/>release and date"]
+    end
+
+    K --> L{"SNAP_STORAGE_DIR set?"}
+    L -->|yes| M["Link frames and snaps<br/>into central storage"] --> N
+    L -->|no| N["git init, commit,<br/>tag the version"]
+    N --> O["Open the .pde in Processing<br/>and press Run"]

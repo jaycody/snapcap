@@ -1,0 +1,25 @@
+flowchart TD
+    A["setup: new Snapcap with your project name"] --> G["Ask git for the version<br/>for example v1.1.0-2-g47fc45b-dirty<br/>or nogit if git is not found"]
+    G --> R["Register hooks with Processing<br/>registerMethod draw and keyEvent"]
+
+    subgraph EVERY ["Every frame, automatically"]
+        D1["Your draw makes the art"] --> D2["Snapcap draw runs right after"]
+        D2 --> Q{"Recording?"}
+        Q -->|yes| SF["saveFrame writes one TIFF"]
+        Q -->|no| OV["Draw the REC overlay<br/>after the save, so it is never captured"]
+        SF --> OV
+    end
+
+    subgraph KEYS ["On key press, alongside your keyPressed"]
+        K{"Which key?"}
+        K -->|r| T["Start or stop a take<br/>new folder named by its start time"]
+        K -->|ENTER| S["save writes one snap"]
+        K -->|d or i| H["Toggle overlay or print key list"]
+    end
+
+    R --> D1
+    R --> K
+    T -.->|switches recording| Q
+
+    SF --> FR[("frames / VERSION / TAKE START TIME /<br/>TIME-FRAMECOUNT.tif")]
+    S --> SN[("snaps / VERSION /<br/>PROJECT-TIME-MILLIS-VERSION.tif")]
