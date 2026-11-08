@@ -1,0 +1,26 @@
+{
+  "snapcap": {
+    "release": "__SNAPCAP_RELEASE__",
+    "created": "__DATE__"
+  },
+  "storage": {
+    "frames": "./frames/",
+    "snaps": "./snaps/",
+    "framesLocal": "./frames_local/",
+    "snapsLocal": "./snaps_local/"
+  },
+  "keys": {
+    "enabled": true,
+    "record": "r",
+    "snap": "ENTER",
+    "overlay": "d",
+    "help": "i"
+  },
+  "format": {
+    "frames": "tif",
+    "snaps": "tif"
+  },
+  "overlay": {
+    "show": true
+  }
+}

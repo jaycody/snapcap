@@ -28,5 +28,30 @@
     Files.delete(Paths.get(sk, "frames"));
     Files.createSymbolicLink(Paths.get(sk, "frames"), Paths.get(sk, "gone2"));
     check("take root now unreachable", !s.reachable(s.takeRoot));
+
+    // snapcap.json settings
+    Path cfg = Paths.get(sk, "snapcap.json");
+    Snapcap d = t.new Snapcap("t", "v1");
+    check("no settings file: defaults", d.recordKey == 'r' && d.snapKey == ENTER
+      && d.frameFormat.equals("tif") && d.showStatus && d.keysOn);
+    Files.write(cfg, ("{\"storage\": {\"frames\": \"/Volumes/Art/frames\"},"
+      + " \"keys\": {\"record\": \"R\", \"snap\": \"SPACE\", \"help\": \"h\"},"
+      + " \"format\": {\"frames\": \"PNG\", \"snaps\": \"jpeg\"},"
+      + " \"overlay\": {\"show\": false}}").getBytes());
+    Snapcap c = t.new Snapcap("t", "v1");
+    check("settings: frames folder", c.frameRoot.equals("/Volumes/Art/frames/"));
+    check("settings: snaps folder left default", c.snapRoot.equals("./snaps/"));
+    check("settings: keys", c.recordKey == 'R' && c.snapKey == ' ' && c.helpKey == 'h' && c.overlayKey == 'd');
+    check("settings: formats", c.frameFormat.equals("png") && c.snapFormat.equals("jpg"));
+    check("settings: overlay hidden", !c.showStatus);
+    Files.write(cfg, "{\"keys\": {\"record\": \"rec\", \"enabled\": \"maybe\"}, \"format\": {\"frames\": \"gif\"}}".getBytes());
+    Snapcap b = t.new Snapcap("t", "v1");
+    check("bad values keep defaults", b.recordKey == 'r' && b.keysOn && b.frameFormat.equals("tif"));
+    Files.write(cfg, "{ not json".getBytes());
+    Snapcap m = t.new Snapcap("t", "v1");
+    check("broken file keeps defaults", m.recordKey == 'r' && m.frameRoot.equals("./frames/"));
+    Files.write(cfg, Files.readAllBytes(Paths.get(System.getProperty("template"))));
+    Snapcap n = t.new Snapcap("t", "v1");
+    check("template settings load", n.recordKey == 'r' && n.snapKey == ENTER && n.frameRoot.equals("./frames/"));
     System.exit(fails == 0 ? 0 : 1);
   }

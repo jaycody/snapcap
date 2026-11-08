@@ -1,6 +1,7 @@
 #!/bin/bash
 # Compiles Snapcap.pde against Processing's core.jar and checks the storage
-# fallback: broken links, unmounted drives, and storage coming back.
+# fallback (broken links, unmounted drives, storage coming back) and the
+# snapcap.json settings file.
 # Needs Java and network access (downloads core.jar once into tests/.cache).
 # Run from anywhere:  bash tests/test_storage_check.sh
 
@@ -15,7 +16,7 @@ fi
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 {
-    echo 'import processing.core.*; import java.io.*; import java.nio.file.*;'
+    echo 'import processing.core.*; import processing.data.*; import java.io.*; import java.nio.file.*;'
     echo 'public class T extends PApplet {'
     cat "$HERE/snapcap_util/Snapcap.pde"
     cat "$HERE/tests/StorageCheck.java.in"
@@ -24,5 +25,5 @@ trap 'rm -rf "$WORK"' EXIT
 
 javac -nowarn -cp "$JAR" -d "$WORK" "$WORK/T.java" || exit 1
 mkdir "$WORK/sketch"
-cd "$WORK/sketch" && java -cp "$JAR:$WORK" T | grep -E '^(ok|FAIL) '
+cd "$WORK/sketch" && java -Dtemplate="$HERE/template/snapcap.json" -cp "$JAR:$WORK" T | grep -E '^(ok|FAIL) '
 exit "${PIPESTATUS[0]}"

@@ -6,12 +6,14 @@ A Processing sketch, version `__VERSION__`, started from [snapcap](https://githu
 
 Open `__PROJECT__/__PROJECT__.pde` in Processing and press Run.
 
-| Key | Action |
+| Key (default) | Action |
 | --- | --- |
 | `r` | Start/stop recording a frame sequence |
 | ENTER | Snap a single frame |
 | `d` | Show/hide the on-screen status (never captured) |
 | `i` | Print the key list |
+
+Keys, image format, output folders and the overlay can be changed in `__PROJECT__/snapcap.json`. See the [snapcap README](https://github.com/jaycody/snapcap#settings-snapcapjson).
 
 ## Output
 

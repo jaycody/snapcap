@@ -41,9 +41,9 @@ What you get:
 ~/sketches/myArt/
     README.md            project name, version, snapcap release, date
     .gitignore           frames and snaps stay out of git
-    .snapcap             which snapcap release it came from
     myArt/myArt.pde      starter sketch, already calling new Snapcap("myArt")
     myArt/Snapcap.pde    copied from snapcap_util
+    myArt/snapcap.json   settings, plus the snapcap release and date it came from
 ```
 
 The sketch folder takes the project's name because Processing needs the folder and the main `.pde` to match. To change what every new project starts with, edit the files in `template/`. `bash tests/test_new_project.sh` checks the whole process, and CI runs it on macOS.
@@ -69,7 +69,7 @@ The version is read from git (`git describe --tags --always --dirty`), so output
 
 Snapcap hooks itself into the sketch with `registerMethod`, so it always captures after your `draw()` and reads keys without touching your `keyPressed()`.
 
-| Key | Action |
+| Key (default) | Action |
 | --- | --- |
 | `r` | Start/stop recording a frame sequence |
 | ENTER | Snap a single frame |
@@ -81,7 +81,40 @@ Output:
 - Snaps: `snaps/<version>/<project>-yyyymmdd-hhmmss-<millis>-<version>.tif`
 - Frames: `frames/<version>/<start time>/yyyymmdd-hhmmss-#######.tif`, one folder per recording
 
-Options (call in `setup()`): `setRecordKey('R')`, `keysOff()`, `setSnapRoot(path)`, `setFrameRoot(path)`.
+### Settings: snapcap.json
+
+Put a `snapcap.json` next to your `.pde` and Snapcap reads it at startup. `snap_new_project` writes one for every new project:
+
+```json
+{
+  "snapcap": { "release": "v0.1-beta.0-9-gcec5a2c", "created": "2026-11-08" },
+  "storage": {
+    "frames": "./frames/",
+    "snaps": "./snaps/",
+    "framesLocal": "./frames_local/",
+    "snapsLocal": "./snaps_local/"
+  },
+  "keys": { "enabled": true, "record": "r", "snap": "ENTER", "overlay": "d", "help": "i" },
+  "format": { "frames": "tif", "snaps": "tif" },
+  "overlay": { "show": true }
+}
+```
+
+| Field | What it does |
+| --- | --- |
+| `snapcap.release`, `snapcap.created` | The snapcap version and date the project was made from. A record only: Snapcap doesn't act on them. |
+| `storage.frames`, `storage.snaps` | Where frames and snaps go. Relative to the sketch, or absolute, such as `/Volumes/Art/frames`. |
+| `storage.framesLocal`, `storage.snapsLocal` | Where they go instead when storage can't be reached. |
+| `keys.enabled` | `false` turns off all Snapcap keys. |
+| `keys.record`, `keys.snap`, `keys.overlay`, `keys.help` | A single character, or `ENTER`, `SPACE` or `TAB`. |
+| `format.frames`, `format.snaps` | `tif`, `tga`, `png` or `jpg`. TGA saves fastest; PNG and JPG are smaller. |
+| `overlay.show` | Whether the on-screen status starts visible. |
+
+Every field is optional. Anything missing, misspelled or invalid keeps its default, and a sketch with no `snapcap.json` at all works exactly as before. The version is never in the file: it always comes live from git, so it can't go stale.
+
+The sketch only reads `snapcap.json`; it never writes one. New projects get it from `snap_new_project`. For an older sketch, copy `template/snapcap.json` next to its `.pde` and remove the `snapcap` section, or keep it and fill it in by hand.
+
+Options (call in `setup()`; they win over `snapcap.json`): `setRecordKey('R')`, `keysOff()`, `setSnapRoot(path)`, `setFrameRoot(path)`.
 
 ### When the storage drive is unplugged
 

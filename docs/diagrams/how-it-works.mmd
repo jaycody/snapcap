@@ -1,6 +1,7 @@
 flowchart TD
     A["setup: new Snapcap with your project name"] --> G["Ask git for the version<br/>for example v1.1.0-2-g47fc45b-dirty<br/>or nogit if git is not found"]
-    G --> R["Register hooks with Processing<br/>registerMethod draw and keyEvent"]
+    G --> CF["Read snapcap.json if there is one<br/>folders, keys, format, overlay"]
+    CF --> R["Register hooks with Processing<br/>registerMethod draw and keyEvent"]
 
     subgraph EVERY ["Every frame, automatically"]
         D1["Your draw makes the art"] --> D2["Snapcap draw runs right after"]

@@ -14,9 +14,10 @@ SNAPCAP_HOME="${SNAPCAP_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}
 #   <parent>/<name>/
 #       README.md
 #       .gitignore          frames/ and snaps/ stay out of git
-#       .snapcap            which snapcap release it came from
 #       <name>/<name>.pde   starter sketch, already calling new Snapcap
 #       <name>/Snapcap.pde  copied from snapcap_util
+#       <name>/snapcap.json settings Snapcap reads at startup, plus the
+#                           snapcap release and date the project came from
 #
 # then runs git init, commits, and tags <version>, so the very first
 # frames are labeled with it.
@@ -93,7 +94,8 @@ snap_new_project () {
         "$name" "$version" "$release" "$today" || return 1
     _snap_fill "$SNAPCAP_HOME/template/README.md" "$dest/README.md" \
         "$name" "$version" "$release" "$today" || return 1
-    printf "snapcap %s\ncreated %s\n" "$release" "$today" > "$dest/.snapcap"
+    _snap_fill "$SNAPCAP_HOME/template/snapcap.json" "$dest/$name/snapcap.json" \
+        "$name" "$version" "$release" "$today" || return 1
 
     if [ -n "$SNAP_STORAGE_DIR" ] && [ ! -d "$SNAP_STORAGE_DIR" ]; then
         # Don't create it: on a Mac that would put a stand-in folder where
