@@ -37,27 +37,64 @@ Snapcap runs on its own once it's created: Processing calls it after every `draw
 
 ## Start a new project
 
-`snap_new_project` makes a ready-to-run sketch with Snapcap already wired in:
+`snap_new_project` is a build script that stamps out a ready-to-run Processing sketch with Snapcap already wired in. Think of it as a cookie cutter: `template/` is the cutter, and every project it makes comes out the same shape, with its own name and version pressed in.
 
 ```bash
-source snapcap.sh                        # or via snapcap.cfg
-snap_new_project myArt v0.1.0 ~/sketches # leave any part out to be asked
+source snapcap.sh                          # or via snapcap.cfg
+snap_new_project myArt v0.1.0 ~/sketches   # leave any part out to be asked
+./snapcap.sh snap_new_project myArt        # also works without sourcing
 ```
+
+### How the script runs
+
+```mermaid
+flowchart TD
+    A["snap_new_project name version parent"] --> B{"Name given?"}
+    B -->|no| B1["Ask for it"] --> C
+    B -->|yes| C{"Valid sketch name?<br/>letters, digits, _"}
+    C -->|no| X["Stop with a message,<br/>nothing written"]
+    C -->|yes| D{"Version given?"}
+    D -->|no| D1["Ask, default v0.1.0"] --> E
+    D -->|yes| E{"Valid version?"}
+    E -->|no| X
+    E -->|yes| F{"Parent folder given?"}
+    F -->|no| F1["Ask, default SNAP_PROJECTS_DIR<br/>then JAY_SPACE then here"] --> G
+    F -->|yes| G{"Parent exists and<br/>project folder is new?"}
+    G -->|no| X
+    G -->|yes| H["Read snapcap release<br/>git describe in this repo"]
+
+    subgraph BUILD ["Build the project folder"]
+        H --> I["Copy Snapcap.pde<br/>from snapcap_util"]
+        I --> J["Fill templates with name,<br/>version, release, date:<br/>sketch, README, gitignore"]
+        J --> K["Write .snapcap<br/>release and date"]
+    end
+
+    K --> L{"SNAP_STORAGE_DIR set?"}
+    L -->|yes| M["Link frames and snaps<br/>into central storage"] --> N
+    L -->|no| N["git init, commit,<br/>tag the version"]
+    N --> O["Open the .pde in Processing<br/>and press Run"]
+```
+
+Step by step:
+
+1. **Gather.** The name, version and parent folder come from the arguments. Anything missing is asked for, with defaults in brackets.
+2. **Check.** It stops before writing anything if the name isn't a valid Processing sketch name, the version has characters that would break a folder name, the parent folder doesn't exist, or the project folder already exists. Nothing gets overwritten.
+3. **Build.** It copies `Snapcap.pde` and fills the files in `template/`, swapping `__PROJECT__`, `__VERSION__`, `__SNAPCAP_RELEASE__` and `__DATE__` for real values. Only the files a sketch needs are copied: no `.git`, demo layers or notes.
+4. **Link storage (optional).** If `SNAP_STORAGE_DIR` is set (for example `~/Dropbox/_SNAPS`), the sketch's `frames` and `snaps` become links into `$SNAP_STORAGE_DIR/myArt/`, so big image files land in central storage instead of next to the code.
+5. **Version.** It runs `git init`, commits, and tags that first commit with the version. Snapcap reads its version from git, so the first frame you record is already labeled `v0.1.0`. Tag again (`git tag v0.2.0`) and new output gets the new label.
+
+What you get:
 
 ```
 ~/sketches/myArt/
-    README.md
-    .gitignore           frames/ and snaps/ stay out of git
+    README.md            project name, version, snapcap release, date
+    .gitignore           frames and snaps stay out of git
     .snapcap             which snapcap release it came from
     myArt/myArt.pde      starter sketch, already calling new Snapcap("myArt")
-    myArt/Snapcap.pde
+    myArt/Snapcap.pde    copied from snapcap_util
 ```
 
-It also runs `git init`, commits, and tags the first commit `v0.1.0`, so the first frames you record are already labeled with that version. The parent folder defaults to `$SNAP_PROJECTS_DIR`, then `$JAY_SPACE`, then the current directory.
-
-Set `SNAP_STORAGE_DIR` (for example `~/Dropbox/_SNAPS`) and the sketch's `frames/` and `snaps/` become links into `$SNAP_STORAGE_DIR/myArt/`, so the image files land in central storage instead of next to the code. The starter files live in `template/`; edit them to change what every new project starts with.
-
-Without sourcing: `./snapcap.sh snap_new_project myArt`.
+The sketch folder takes the project's name because Processing needs the folder and the main `.pde` to match. To change what every new project starts with, edit the files in `template/`. `bash tests/test_new_project.sh` checks the whole process, and CI runs it on macOS.
 
 ## Use it in a sketch
 
