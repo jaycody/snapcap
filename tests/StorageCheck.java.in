@@ -1,0 +1,32 @@
+// Test body for tests/test_storage_check.sh, which wraps it in a PApplet
+// subclass together with snapcap_util/Snapcap.pde, the way Processing does.
+  static int fails = 0;
+  static void check(String name, boolean ok) { System.out.println((ok ? "ok   " : "FAIL ") + name); if (!ok) fails++; }
+  public static void main(String[] a) { try { run(); } catch (Exception e) { throw new RuntimeException(e); } }
+  static void run() throws Exception {
+    T t = new T();
+    Snapcap s = t.new Snapcap("t", "v1");
+    String sk = t.sketchPath();
+    Path store = Files.createDirectories(Paths.get(sk, "store"));
+    check("default frames root, not made yet", s.reachable("./frames/"));
+    check("no storage offline by default", !s.storageOffline);
+    Files.createDirectories(store.resolve("frames"));
+    Files.createSymbolicLink(Paths.get(sk, "frames"), store.resolve("frames"));
+    check("link to mounted storage", s.reachable("./frames/"));
+    Files.createSymbolicLink(Paths.get(sk, "snaps"), Paths.get(sk, "gone", "snaps"));
+    check("broken link unreachable", !s.reachable("./snaps/"));
+    check("snaps fall back locally", s.activeRoot(s.snapRoot, s.localSnapRoot).equals("./snaps_local/"));
+    s.checkStorage();
+    check("offline flagged", s.storageOffline);
+    check("missing drive path unreachable", !s.reachable("/Volumes/NoSuchDrive/frames/"));
+    Files.createDirectories(Paths.get(sk, "gone", "snaps"));
+    s.checkStorage();
+    check("back online when link works again", !s.storageOffline);
+    // mid-take unplug
+    s.toggleRecording();
+    check("take goes to storage", s.sequencePath.startsWith("./frames/v1/"));
+    Files.delete(Paths.get(sk, "frames"));
+    Files.createSymbolicLink(Paths.get(sk, "frames"), Paths.get(sk, "gone2"));
+    check("take root now unreachable", !s.reachable(s.takeRoot));
+    System.exit(fails == 0 ? 0 : 1);
+  }

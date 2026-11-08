@@ -32,7 +32,7 @@ Step by step:
 1. **Gather.** The name, version and parent folder come from the arguments. Anything missing is asked for, with defaults in brackets.
 2. **Check.** It stops before writing anything if the name isn't a valid Processing sketch name, the version has characters that would break a folder name, the parent folder doesn't exist, or the project folder already exists. Nothing gets overwritten.
 3. **Build.** It copies `Snapcap.pde` and fills the files in `template/`, swapping `__PROJECT__`, `__VERSION__`, `__SNAPCAP_RELEASE__` and `__DATE__` for real values. Only the files a sketch needs are copied: no `.git`, demo layers or notes.
-4. **Link storage (optional).** If `SNAP_STORAGE_DIR` is set (for example `~/Dropbox/_SNAPS`), the sketch's `frames` and `snaps` become links into `$SNAP_STORAGE_DIR/myArt/`, so big image files land in central storage instead of next to the code.
+4. **Link storage (optional).** If `SNAP_STORAGE_DIR` is set (for example `~/Dropbox/_SNAPS`), the sketch's `frames` and `snaps` folders become links into `$SNAP_STORAGE_DIR/myArt/`, so big image files land in central storage instead of next to the code. The folders themselves are the links, not each file: open `frames/` in the sketch and you see the real TIFFs in storage. If `SNAP_STORAGE_DIR` doesn't exist (drive not mounted), no links are made, nothing is created in its place, and output stays in the sketch.
 5. **Version.** It runs `git init`, commits, and tags that first commit with the version. Snapcap reads its version from git, so the first frame you record is already labeled `v0.1.0`. Tag again (`git tag v0.2.0`) and new output gets the new label.
 
 What you get:
@@ -82,3 +82,14 @@ Output:
 - Frames: `frames/<version>/<start time>/yyyymmdd-hhmmss-#######.tif`, one folder per recording
 
 Options (call in `setup()`): `setRecordKey('R')`, `keysOff()`, `setSnapRoot(path)`, `setFrameRoot(path)`.
+
+### When the storage drive is unplugged
+
+If `frames/` or `snaps/` is a link to a drive that isn't mounted, the link points nowhere and saving there would fail. Snapcap checks first. It checks about once a second, at the start of every take and snap, and on every recorded frame. When storage can't be reached:
+
+- frames go to `frames_local/` and snaps to `snaps_local/`, inside the sketch, with the same folder and file names
+- the console prints `STORAGE OFFLINE` and says which folder is missing
+- a yellow `STORAGE OFFLINE` bar shows on screen, even with the status hidden, and is never captured
+- if the drive disappears in the middle of a take, the rest of that take goes to `frames_local/` under the same take folder
+
+When the drive comes back, the console says so and new takes and snaps go back to storage. Anything saved locally stays in `frames_local/` and `snaps_local/` for you to move over. Both folders are in the new-project `.gitignore`. The same check covers an absolute root set with `setFrameRoot("/Volumes/MyDrive/frames")`: Snapcap never creates a stand-in folder for a missing drive.

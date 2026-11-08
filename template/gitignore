@@ -4,5 +4,7 @@ application.*
 out
 frames
 snaps
+frames_local
+snaps_local
 *.tif
 *.tga

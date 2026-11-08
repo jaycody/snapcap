@@ -20,6 +20,8 @@ flowchart TD
     end
 
     K --> L{"SNAP_STORAGE_DIR set?"}
-    L -->|yes| M["Link frames and snaps<br/>into central storage"] --> N
+    L -->|yes| L2{"Storage folder there?<br/>drive mounted"}
+    L2 -->|yes| M["Link frames and snaps<br/>into central storage"] --> N
+    L2 -->|no| W["Warn, keep frames<br/>and snaps in the sketch"] --> N
     L -->|no| N["git init, commit,<br/>tag the version"]
     N --> O["Open the .pde in Processing<br/>and press Run"]

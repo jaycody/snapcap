@@ -27,7 +27,9 @@ SNAPCAP_HOME="${SNAPCAP_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}
 #
 # If $SNAP_STORAGE_DIR is set (say ~/Dropbox/_SNAPS), frames/ and snaps/
 # are symlinks into $SNAP_STORAGE_DIR/<name>/, so big image files land in
-# central storage instead of next to the code.
+# central storage instead of next to the code. If that folder isn't there
+# (drive not mounted), no links are made. Snapcap itself also falls back
+# to frames_local/ and snaps_local/ whenever a link can't be reached.
 snap_new_project () {
     local name="$1" version="$2" parent="$3"
     local default_parent="${SNAP_PROJECTS_DIR:-${JAY_SPACE:-$PWD}}"
@@ -93,7 +95,12 @@ snap_new_project () {
         "$name" "$version" "$release" "$today" || return 1
     printf "snapcap %s\ncreated %s\n" "$release" "$today" > "$dest/.snapcap"
 
-    if [ -n "$SNAP_STORAGE_DIR" ]; then
+    if [ -n "$SNAP_STORAGE_DIR" ] && [ ! -d "$SNAP_STORAGE_DIR" ]; then
+        # Don't create it: on a Mac that would put a stand-in folder where
+        # an unmounted drive should be. Saving stays inside the sketch.
+        echo "storage: $SNAP_STORAGE_DIR isn't there (drive not mounted?), so frames and snaps stay in the sketch." >&2
+        echo "         Link them later with: ln -s <storage>/$name/frames $dest/$name/frames" >&2
+    elif [ -n "$SNAP_STORAGE_DIR" ]; then
         local store="${SNAP_STORAGE_DIR%/}/$name"
         mkdir -p "$store/frames" "$store/snaps" &&
         ln -s "$store/frames" "$dest/$name/frames" &&

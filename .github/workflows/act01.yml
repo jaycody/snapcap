@@ -17,3 +17,9 @@ jobs:
           fetch-depth: 0  # tags, so the snapcap release can be read
       - name: Test snap_new_project
         run: bash tests/test_new_project.sh
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Compile Snapcap and test the storage fallback
+        run: bash tests/test_storage_check.sh

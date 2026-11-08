@@ -22,6 +22,12 @@
  *   snaps:   <snapRoot>/<VERSION>/<PROJ>-yyyymmdd-hhmmss-<millis>-<VERSION>.tif
  *   frames:  <frameRoot>/<VERSION>/yyyymmdd-hhmmss/yyyymmdd-hhmmss-#######.tif
  *            (one folder per recording, named by its start time)
+ *
+ * Storage check: if frames/ or snaps/ is a link to a drive that isn't
+ * mounted (or any root can't be reached), output goes to frames_local/
+ * and snaps_local/ inside the sketch instead, with a warning in the
+ * console and on screen. Checked about once a second, at every take and
+ * snap, and on every recorded frame.
  *******************************************************************/
 
 // Declared public so Processing can find and call draw() and keyEvent().
@@ -34,6 +40,14 @@ public class Snapcap {
   boolean  recordIsOn    = false;
   boolean  showStatus    = true;
   String   sequencePath  = "";
+  String   takeRoot      = "";   // where the current take is going
+  String   takeFolder    = "";   // <VERSION>/<start time>/
+
+  // Fallbacks for when a storage link or drive can't be reached.
+  String   localSnapRoot  = "./snaps_local/";
+  String   localFrameRoot = "./frames_local/";
+  boolean  storageOffline = false;
+  int      lastStorageCheck = -1000;
 
   char     recordKey = 'r';
   boolean  keysOn    = true;
@@ -62,12 +76,26 @@ public class Snapcap {
   /*//////////////////////////////////////////////////
    CALLED BY PROCESSING after every sketch draw() */
   public void draw() {
+    if (millis() - lastStorageCheck > 1000) {
+      checkStorage();
+    }
     if (recordIsOn) {
+      // Drive went away mid-take: finish the take locally, same folder name.
+      if (!takeRoot.equals(localFrameRoot) && !reachable(takeRoot)) {
+        takeRoot = localFrameRoot;
+        sequencePath = takeRoot + takeFolder;
+        checkStorage();
+        println("*** snapcap: rest of this take goes to " + sequencePath + "\n");
+      }
       saveFrame(sequencePath + timestamp(true) + "-#######.tif");
     }
     // Drawn after the save, so it shows on screen but never in a frame.
     if (showStatus) {
       drawStatus();
+    }
+    // Shown even with the status hidden, and never captured.
+    if (storageOffline) {
+      drawStorageWarning();
     }
   }
 
@@ -102,7 +130,10 @@ public class Snapcap {
   void toggleRecording() {
     recordIsOn = !recordIsOn;
     if (recordIsOn) {
-      sequencePath = frameRoot + version + "/" + timestamp(true) + "/";
+      checkStorage();
+      takeRoot     = activeRoot(frameRoot, localFrameRoot);
+      takeFolder   = version + "/" + timestamp(true) + "/";
+      sequencePath = takeRoot + takeFolder;
       println("\n*** Recording ON ---> " + sequencePath + "\n");
     } else {
       println("\n*** Recording OFF ***\n");
@@ -112,11 +143,57 @@ public class Snapcap {
   /*//////////////////////////////////////////////////
    SNAP: save the current frame as a single image */
   String snapScreen() {
-    String snapID = snapRoot + version + "/" + project + "-"
+    checkStorage();
+    String snapID = activeRoot(snapRoot, localSnapRoot) + version + "/" + project + "-"
       + timestamp(true) + "-" + nf(millis(), 6) + "-" + version + ".tif";
     save(snapID);
     println("\n\tOHH SNAAAP ---> " + snapID + "\n");
     return snapID;
+  }
+
+  /*//////////////////////////////////////////////////
+   STORAGE CHECK
+   frames/ and snaps/ may be links into central storage, such as an
+   external drive. When the drive isn't mounted the link points nowhere,
+   and saving there would fail. So check first, and fall back to a
+   local folder inside the sketch. */
+
+  // Can Processing save under this root?
+  boolean reachable(String root) {
+    java.nio.file.Path p = java.nio.file.Paths.get(sketchPath(root));
+    if (java.nio.file.Files.isDirectory(p)) {
+      return true;                     // a real folder, or a link to one
+    }
+    if (java.nio.file.Files.isSymbolicLink(p) || java.nio.file.Files.exists(p)) {
+      return false;                    // a link to nowhere, or a file in the way
+    }
+    // Not made yet. Processing creates it, but only if its parent exists:
+    // never create a stand-in for an unmounted /Volumes/<drive>.
+    File parent = p.toFile().getParentFile();
+    return parent != null && parent.isDirectory();
+  }
+
+  // The root to save under right now.
+  String activeRoot(String root, String localRoot) {
+    return reachable(root) ? root : localRoot;
+  }
+
+  // Track whether storage is reachable, and say so when it changes.
+  void checkStorage() {
+    lastStorageCheck = millis();
+    boolean framesOk = reachable(frameRoot);
+    boolean snapsOk  = reachable(snapRoot);
+    boolean offline  = !framesOk || !snapsOk;
+    if (offline && !storageOffline) {
+      println("\n*** snapcap: STORAGE OFFLINE ***");
+      if (!framesOk) println("    " + frameRoot + " can't be reached, frames go to " + localFrameRoot);
+      if (!snapsOk)  println("    " + snapRoot + " can't be reached, snaps go to " + localSnapRoot);
+      println("    (drive unplugged, or the link points nowhere)\n");
+    } else if (!offline && storageOffline) {
+      println("\n*** snapcap: storage is back. New takes and snaps go to "
+        + frameRoot + " and " + snapRoot + "\n");
+    }
+    storageOffline = offline;
   }
 
   /*//////////////////////////////////////////////////
@@ -170,6 +247,18 @@ public class Snapcap {
       fill(255, 120);
       text("snapcap: 'r' record, ENTER snap, 'd' hide", 10, 8);
     }
+    popStyle();
+  }
+
+  void drawStorageWarning() {
+    pushStyle();
+    noStroke();
+    textAlign(LEFT, TOP);
+    textSize(14);
+    fill(0, 160);
+    rect(0, 28, width, 22);
+    fill(255, 200, 0);
+    text("STORAGE OFFLINE: saving to " + localFrameRoot + " and " + localSnapRoot, 10, 32);
     popStyle();
   }
 
