@@ -1,0 +1,57 @@
+// Test body for tests/test_storage_check.sh, which wraps it in a PApplet
+// subclass together with snapcap_util/Snapcap.pde, the way Processing does.
+  static int fails = 0;
+  static void check(String name, boolean ok) { System.out.println((ok ? "ok   " : "FAIL ") + name); if (!ok) fails++; }
+  public static void main(String[] a) { try { run(); } catch (Exception e) { throw new RuntimeException(e); } }
+  static void run() throws Exception {
+    T t = new T();
+    Snapcap s = t.new Snapcap("t", "v1");
+    String sk = t.sketchPath();
+    Path store = Files.createDirectories(Paths.get(sk, "store"));
+    check("default frames root, not made yet", s.reachable("./frames/"));
+    check("no storage offline by default", !s.storageOffline);
+    Files.createDirectories(store.resolve("frames"));
+    Files.createSymbolicLink(Paths.get(sk, "frames"), store.resolve("frames"));
+    check("link to mounted storage", s.reachable("./frames/"));
+    Files.createSymbolicLink(Paths.get(sk, "snaps"), Paths.get(sk, "gone", "snaps"));
+    check("broken link unreachable", !s.reachable("./snaps/"));
+    check("snaps fall back locally", s.activeRoot(s.snapRoot, s.localSnapRoot).equals("./snaps_local/"));
+    s.checkStorage();
+    check("offline flagged", s.storageOffline);
+    check("missing drive path unreachable", !s.reachable("/Volumes/NoSuchDrive/frames/"));
+    Files.createDirectories(Paths.get(sk, "gone", "snaps"));
+    s.checkStorage();
+    check("back online when link works again", !s.storageOffline);
+    // mid-take unplug
+    s.toggleRecording();
+    check("take goes to storage", s.sequencePath.startsWith("./frames/v1/"));
+    Files.delete(Paths.get(sk, "frames"));
+    Files.createSymbolicLink(Paths.get(sk, "frames"), Paths.get(sk, "gone2"));
+    check("take root now unreachable", !s.reachable(s.takeRoot));
+
+    // snapcap.json settings
+    Path cfg = Paths.get(sk, "snapcap.json");
+    Snapcap d = t.new Snapcap("t", "v1");
+    check("no settings file: defaults", d.recordKey == 'r' && d.snapKey == ENTER
+      && d.frameFormat.equals("tif") && d.showStatus && d.keysOn);
+    Files.write(cfg, ("{\"storage\": {\"frames\": \"/Volumes/Art/frames\"},"
+      + " \"keys\": {\"record\": \"R\", \"snap\": \"SPACE\", \"help\": \"h\"},"
+      + " \"format\": {\"frames\": \"PNG\", \"snaps\": \"jpeg\"},"
+      + " \"overlay\": {\"show\": false}}").getBytes());
+    Snapcap c = t.new Snapcap("t", "v1");
+    check("settings: frames folder", c.frameRoot.equals("/Volumes/Art/frames/"));
+    check("settings: snaps folder left default", c.snapRoot.equals("./snaps/"));
+    check("settings: keys", c.recordKey == 'R' && c.snapKey == ' ' && c.helpKey == 'h' && c.overlayKey == 'd');
+    check("settings: formats", c.frameFormat.equals("png") && c.snapFormat.equals("jpg"));
+    check("settings: overlay hidden", !c.showStatus);
+    Files.write(cfg, "{\"keys\": {\"record\": \"rec\", \"enabled\": \"maybe\"}, \"format\": {\"frames\": \"gif\"}}".getBytes());
+    Snapcap b = t.new Snapcap("t", "v1");
+    check("bad values keep defaults", b.recordKey == 'r' && b.keysOn && b.frameFormat.equals("tif"));
+    Files.write(cfg, "{ not json".getBytes());
+    Snapcap m = t.new Snapcap("t", "v1");
+    check("broken file keeps defaults", m.recordKey == 'r' && m.frameRoot.equals("./frames/"));
+    Files.write(cfg, Files.readAllBytes(Paths.get(System.getProperty("template"))));
+    Snapcap n = t.new Snapcap("t", "v1");
+    check("template settings load", n.recordKey == 'r' && n.snapKey == ENTER && n.frameRoot.equals("./frames/"));
+    System.exit(fails == 0 ? 0 : 1);
+  }

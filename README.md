@@ -32,7 +32,7 @@ Step by step:
 1. **Gather.** The name, version and parent folder come from the arguments. Anything missing is asked for, with defaults in brackets.
 2. **Check.** It stops before writing anything if the name isn't a valid Processing sketch name, the version has characters that would break a folder name, the parent folder doesn't exist, or the project folder already exists. Nothing gets overwritten.
 3. **Build.** It copies `Snapcap.pde` and fills the files in `template/`, swapping `__PROJECT__`, `__VERSION__`, `__SNAPCAP_RELEASE__` and `__DATE__` for real values. Only the files a sketch needs are copied: no `.git`, demo layers or notes.
-4. **Link storage (optional).** If `SNAP_STORAGE_DIR` is set (for example `~/Dropbox/_SNAPS`), the sketch's `frames` and `snaps` become links into `$SNAP_STORAGE_DIR/myArt/`, so big image files land in central storage instead of next to the code.
+4. **Link storage (optional).** If `SNAP_STORAGE_DIR` is set (for example `~/Dropbox/_SNAPS`), the sketch's `frames` and `snaps` folders become links into `$SNAP_STORAGE_DIR/myArt/`, so big image files land in central storage instead of next to the code. The folders themselves are the links, not each file: open `frames/` in the sketch and you see the real TIFFs in storage. If `SNAP_STORAGE_DIR` doesn't exist (drive not mounted), no links are made, nothing is created in its place, and output stays in the sketch.
 5. **Version.** It runs `git init`, commits, and tags that first commit with the version. Snapcap reads its version from git, so the first frame you record is already labeled `v0.1.0`. Tag again (`git tag v0.2.0`) and new output gets the new label.
 
 What you get:
@@ -41,9 +41,9 @@ What you get:
 ~/sketches/myArt/
     README.md            project name, version, snapcap release, date
     .gitignore           frames and snaps stay out of git
-    .snapcap             which snapcap release it came from
     myArt/myArt.pde      starter sketch, already calling new Snapcap("myArt")
     myArt/Snapcap.pde    copied from snapcap_util
+    myArt/snapcap.json   settings, plus the snapcap release and date it came from
 ```
 
 The sketch folder takes the project's name because Processing needs the folder and the main `.pde` to match. To change what every new project starts with, edit the files in `template/`. `bash tests/test_new_project.sh` checks the whole process, and CI runs it on macOS.
@@ -69,7 +69,7 @@ The version is read from git (`git describe --tags --always --dirty`), so output
 
 Snapcap hooks itself into the sketch with `registerMethod`, so it always captures after your `draw()` and reads keys without touching your `keyPressed()`.
 
-| Key | Action |
+| Key (default) | Action |
 | --- | --- |
 | `r` | Start/stop recording a frame sequence |
 | ENTER | Snap a single frame |
@@ -81,4 +81,48 @@ Output:
 - Snaps: `snaps/<version>/<project>-yyyymmdd-hhmmss-<millis>-<version>.tif`
 - Frames: `frames/<version>/<start time>/yyyymmdd-hhmmss-#######.tif`, one folder per recording
 
-Options (call in `setup()`): `setRecordKey('R')`, `keysOff()`, `setSnapRoot(path)`, `setFrameRoot(path)`.
+### Settings: snapcap.json
+
+Put a `snapcap.json` next to your `.pde` and Snapcap reads it at startup. `snap_new_project` writes one for every new project:
+
+```json
+{
+  "snapcap": { "release": "v0.1-beta.0-9-gcec5a2c", "created": "2026-11-08" },
+  "storage": {
+    "frames": "./frames/",
+    "snaps": "./snaps/",
+    "framesLocal": "./frames_local/",
+    "snapsLocal": "./snaps_local/"
+  },
+  "keys": { "enabled": true, "record": "r", "snap": "ENTER", "overlay": "d", "help": "i" },
+  "format": { "frames": "tif", "snaps": "tif" },
+  "overlay": { "show": true }
+}
+```
+
+| Field | What it does |
+| --- | --- |
+| `snapcap.release`, `snapcap.created` | The snapcap version and date the project was made from. A record only: Snapcap doesn't act on them. |
+| `storage.frames`, `storage.snaps` | Where frames and snaps go. Relative to the sketch, or absolute, such as `/Volumes/Art/frames`. |
+| `storage.framesLocal`, `storage.snapsLocal` | Where they go instead when storage can't be reached. |
+| `keys.enabled` | `false` turns off all Snapcap keys. |
+| `keys.record`, `keys.snap`, `keys.overlay`, `keys.help` | A single character, or `ENTER`, `SPACE` or `TAB`. |
+| `format.frames`, `format.snaps` | `tif`, `tga`, `png` or `jpg`. TGA saves fastest; PNG and JPG are smaller. |
+| `overlay.show` | Whether the on-screen status starts visible. |
+
+Every field is optional. Anything missing, misspelled or invalid keeps its default, and a sketch with no `snapcap.json` at all works exactly as before. The version is never in the file: it always comes live from git, so it can't go stale.
+
+The sketch only reads `snapcap.json`; it never writes one. New projects get it from `snap_new_project`. For an older sketch, copy `template/snapcap.json` next to its `.pde` and remove the `snapcap` section, or keep it and fill it in by hand.
+
+Options (call in `setup()`; they win over `snapcap.json`): `setRecordKey('R')`, `keysOff()`, `setSnapRoot(path)`, `setFrameRoot(path)`.
+
+### When the storage drive is unplugged
+
+If `frames/` or `snaps/` is a link to a drive that isn't mounted, the link points nowhere and saving there would fail. Snapcap checks first. It checks about once a second, at the start of every take and snap, and on every recorded frame. When storage can't be reached:
+
+- frames go to `frames_local/` and snaps to `snaps_local/`, inside the sketch, with the same folder and file names
+- the console prints `STORAGE OFFLINE` and says which folder is missing
+- a yellow `STORAGE OFFLINE` bar shows on screen, even with the status hidden, and is never captured
+- if the drive disappears in the middle of a take, the rest of that take goes to `frames_local/` under the same take folder
+
+When the drive comes back, the console says so and new takes and snaps go back to storage. Anything saved locally stays in `frames_local/` and `snaps_local/` for you to move over. Both folders are in the new-project `.gitignore`. The same check covers an absolute root set with `setFrameRoot("/Volumes/MyDrive/frames")`: Snapcap never creates a stand-in folder for a missing drive.

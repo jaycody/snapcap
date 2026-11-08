@@ -1,19 +1,23 @@
 flowchart TD
     A["setup: new Snapcap with your project name"] --> G["Ask git for the version<br/>for example v1.1.0-2-g47fc45b-dirty<br/>or nogit if git is not found"]
-    G --> R["Register hooks with Processing<br/>registerMethod draw and keyEvent"]
+    G --> CF["Read snapcap.json if there is one<br/>folders, keys, format, overlay"]
+    CF --> R["Register hooks with Processing<br/>registerMethod draw and keyEvent"]
 
     subgraph EVERY ["Every frame, automatically"]
         D1["Your draw makes the art"] --> D2["Snapcap draw runs right after"]
         D2 --> Q{"Recording?"}
-        Q -->|yes| SF["saveFrame writes one TIFF"]
+        Q -->|yes| ST{"Storage reachable?<br/>link or drive there"}
+        ST -->|yes| SF["saveFrame writes one TIFF"]
+        ST -->|no| SL["saveFrame writes to frames_local<br/>and warns on screen"]
         Q -->|no| OV["Draw the REC overlay<br/>after the save, so it is never captured"]
         SF --> OV
+        SL --> OV
     end
 
     subgraph KEYS ["On key press, alongside your keyPressed"]
         K{"Which key?"}
         K -->|r| T["Start or stop a take<br/>new folder named by its start time"]
-        K -->|ENTER| S["save writes one snap"]
+        K -->|ENTER| S["save writes one snap<br/>to snaps_local if storage is offline"]
         K -->|d or i| H["Toggle overlay or print key list"]
     end
 
@@ -22,4 +26,5 @@ flowchart TD
     T -.->|switches recording| Q
 
     SF --> FR[("frames / VERSION / TAKE START TIME /<br/>TIME-FRAMECOUNT.tif")]
+    SL --> FL[("frames_local / same folders")]
     S --> SN[("snaps / VERSION /<br/>PROJECT-TIME-MILLIS-VERSION.tif")]

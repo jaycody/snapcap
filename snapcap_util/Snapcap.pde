@@ -21,7 +21,19 @@
  * Output:
  *   snaps:   <snapRoot>/<VERSION>/<PROJ>-yyyymmdd-hhmmss-<millis>-<VERSION>.tif
  *   frames:  <frameRoot>/<VERSION>/yyyymmdd-hhmmss/yyyymmdd-hhmmss-#######.tif
+ *            (.tif by default; snapcap.json can pick tga, png or jpg)
  *            (one folder per recording, named by its start time)
+ *
+ * Settings: snapcap.json in the sketch folder, if there is one, sets
+ * the folders, keys, image format and overlay (see loadConfig() below).
+ * Anything it leaves out keeps the default. Setters called in setup()
+ * win over the file.
+ *
+ * Storage check: if frames/ or snaps/ is a link to a drive that isn't
+ * mounted (or any root can't be reached), output goes to frames_local/
+ * and snaps_local/ inside the sketch instead, with a warning in the
+ * console and on screen. Checked about once a second, at every take and
+ * snap, and on every recorded frame.
  *******************************************************************/
 
 // Declared public so Processing can find and call draw() and keyEvent().
@@ -34,9 +46,24 @@ public class Snapcap {
   boolean  recordIsOn    = false;
   boolean  showStatus    = true;
   String   sequencePath  = "";
+  String   takeRoot      = "";   // where the current take is going
+  String   takeFolder    = "";   // <VERSION>/<start time>/
 
-  char     recordKey = 'r';
-  boolean  keysOn    = true;
+  // Fallbacks for when a storage link or drive can't be reached.
+  String   localSnapRoot  = "./snaps_local/";
+  String   localFrameRoot = "./frames_local/";
+  boolean  storageOffline = false;
+  int      lastStorageCheck = -1000;
+
+  char     recordKey  = 'r';
+  char     snapKey    = ENTER;     // RETURN works too
+  char     overlayKey = 'd';
+  char     helpKey    = 'i';
+  boolean  keysOn     = true;
+
+  String   frameFormat = "tif";
+  String   snapFormat  = "tif";
+  String   configFile  = "snapcap.json";
 
   // Version detected from git
   Snapcap(String project) {
@@ -56,18 +83,33 @@ public class Snapcap {
     registerMethod("draw", this);
     registerMethod("keyEvent", this);
 
+    loadConfig();
     printInstructions();
   }
 
   /*//////////////////////////////////////////////////
    CALLED BY PROCESSING after every sketch draw() */
   public void draw() {
+    if (millis() - lastStorageCheck > 1000) {
+      checkStorage();
+    }
     if (recordIsOn) {
-      saveFrame(sequencePath + timestamp(true) + "-#######.tif");
+      // Drive went away mid-take: finish the take locally, same folder name.
+      if (!takeRoot.equals(localFrameRoot) && !reachable(takeRoot)) {
+        takeRoot = localFrameRoot;
+        sequencePath = takeRoot + takeFolder;
+        checkStorage();
+        println("*** snapcap: rest of this take goes to " + sequencePath + "\n");
+      }
+      saveFrame(sequencePath + timestamp(true) + "-#######." + frameFormat);
     }
     // Drawn after the save, so it shows on screen but never in a frame.
     if (showStatus) {
       drawStatus();
+    }
+    // Shown even with the status hidden, and never captured.
+    if (storageOffline) {
+      drawStorageWarning();
     }
   }
 
@@ -80,11 +122,11 @@ public class Snapcap {
     char k = e.getKey();
     if (k == recordKey) {
       toggleRecording();
-    } else if (k == ENTER || k == RETURN) {
+    } else if (k == snapKey || (snapKey == ENTER && k == RETURN)) {
       snapScreen();
-    } else if (k == 'd') {
+    } else if (k == overlayKey) {
       showStatus = !showStatus;
-    } else if (k == 'i') {
+    } else if (k == helpKey) {
       printInstructions();
     }
   }
@@ -97,12 +139,121 @@ public class Snapcap {
   void setFrameRoot(String path)  { frameRoot = withSlash(path); }
 
   /*//////////////////////////////////////////////////
+   SETTINGS FILE: snapcap.json in the sketch folder. snap_new_project
+   writes one; with no file, or a field left out, the default stays.
+     {
+       "snapcap": { "release": "v0.1-beta.0-9-gcec5a2c", "created": "2026-11-08" },
+       "storage": { "frames": "./frames/", "snaps": "./snaps/",
+                    "framesLocal": "./frames_local/", "snapsLocal": "./snaps_local/" },
+       "keys":    { "enabled": true, "record": "r", "snap": "ENTER",
+                    "overlay": "d", "help": "i" },
+       "format":  { "frames": "tif", "snaps": "tif" },
+       "overlay": { "show": true }
+     }
+   The version is not in the file: it always comes live from git. */
+  void loadConfig() {
+    File f = new File(sketchPath(configFile));
+    if (!f.isFile()) {
+      return;
+    }
+    JSONObject c;
+    try {
+      c = loadJSONObject(f.getAbsolutePath());
+    }
+    catch (Exception e) {
+      c = null;
+    }
+    if (c == null) {
+      println("snapcap: couldn't read " + configFile + ", using defaults");
+      return;
+    }
+    JSONObject storage = cfgSection(c, "storage");
+    frameRoot      = withSlash(cfgString(storage, "frames", frameRoot));
+    snapRoot       = withSlash(cfgString(storage, "snaps", snapRoot));
+    localFrameRoot = withSlash(cfgString(storage, "framesLocal", localFrameRoot));
+    localSnapRoot  = withSlash(cfgString(storage, "snapsLocal", localSnapRoot));
+
+    JSONObject keys = cfgSection(c, "keys");
+    keysOn     = cfgFlag(keys, "enabled", keysOn);
+    recordKey  = keyFrom(cfgString(keys, "record", null), recordKey);
+    snapKey    = keyFrom(cfgString(keys, "snap", null), snapKey);
+    overlayKey = keyFrom(cfgString(keys, "overlay", null), overlayKey);
+    helpKey    = keyFrom(cfgString(keys, "help", null), helpKey);
+
+    JSONObject format = cfgSection(c, "format");
+    frameFormat = imageFormat(cfgString(format, "frames", frameFormat), frameFormat);
+    snapFormat  = imageFormat(cfgString(format, "snaps", snapFormat), snapFormat);
+
+    showStatus = cfgFlag(cfgSection(c, "overlay"), "show", showStatus);
+    println("snapcap: settings from " + configFile);
+  }
+
+  // JSON helpers that fall back to the default instead of throwing.
+  JSONObject cfgSection(JSONObject c, String name) {
+    try {
+      return c.hasKey(name) ? c.getJSONObject(name) : null;
+    }
+    catch (Exception e) {
+      return null;
+    }
+  }
+
+  String cfgString(JSONObject o, String key, String fallback) {
+    try {
+      return (o != null && o.hasKey(key)) ? o.getString(key) : fallback;
+    }
+    catch (Exception e) {
+      return fallback;
+    }
+  }
+
+  boolean cfgFlag(JSONObject o, String key, boolean fallback) {
+    try {
+      return (o != null && o.hasKey(key)) ? o.getBoolean(key) : fallback;
+    }
+    catch (Exception e) {
+      return fallback;
+    }
+  }
+
+  // "ENTER", "SPACE", "TAB" or a single character
+  char keyFrom(String name, char fallback) {
+    if (name == null) return fallback;
+    if (name.equalsIgnoreCase("ENTER") || name.equalsIgnoreCase("RETURN")) return ENTER;
+    if (name.equalsIgnoreCase("SPACE")) return ' ';
+    if (name.equalsIgnoreCase("TAB")) return TAB;
+    if (name.length() == 1) return name.charAt(0);
+    println("snapcap: unknown key \"" + name + "\" in " + configFile + ", keeping " + keyName(fallback));
+    return fallback;
+  }
+
+  String keyName(char k) {
+    if (k == ENTER || k == RETURN) return "<ENTER>";
+    if (k == ' ') return "<SPACE>";
+    if (k == TAB) return "<TAB>";
+    return "'" + k + "'";
+  }
+
+  // Formats Processing can save: tif, tga, png, jpg
+  String imageFormat(String name, String fallback) {
+    String f = name.toLowerCase().replace(".", "");
+    if (f.equals("jpeg")) f = "jpg";
+    if (f.equals("tiff")) f = "tif";
+    if (f.equals("tif") || f.equals("tga") || f.equals("png") || f.equals("jpg")) return f;
+    println("snapcap: unknown image format \"" + name + "\" in " + configFile + ", keeping " + fallback);
+    return fallback;
+  }
+
+  /*//////////////////////////////////////////////////
    RECORD: each recording gets its own folder, named by its start time,
    so stopping and starting again never overwrites an earlier take. */
   void toggleRecording() {
     recordIsOn = !recordIsOn;
     if (recordIsOn) {
-      sequencePath = frameRoot + version + "/" + timestamp(true) + "/";
+      checkStorage();
+      takeRoot     = activeRoot(frameRoot, localFrameRoot);
+      takeFolder   = version + "/" + timestamp(true) + "/";
+      sequencePath = takeRoot + takeFolder;
       println("\n*** Recording ON ---> " + sequencePath + "\n");
     } else {
       println("\n*** Recording OFF ***\n");
@@ -112,11 +263,57 @@ public class Snapcap {
   /*//////////////////////////////////////////////////
    SNAP: save the current frame as a single image */
   String snapScreen() {
-    String snapID = snapRoot + version + "/" + project + "-"
-      + timestamp(true) + "-" + nf(millis(), 6) + "-" + version + ".tif";
+    checkStorage();
+    String snapID = activeRoot(snapRoot, localSnapRoot) + version + "/" + project + "-"
+      + timestamp(true) + "-" + nf(millis(), 6) + "-" + version + "." + snapFormat;
     save(snapID);
     println("\n\tOHH SNAAAP ---> " + snapID + "\n");
     return snapID;
+  }
+
+  /*//////////////////////////////////////////////////
+   STORAGE CHECK
+   frames/ and snaps/ may be links into central storage, such as an
+   external drive. When the drive isn't mounted the link points nowhere,
+   and saving there would fail. So check first, and fall back to a
+   local folder inside the sketch. */
+
+  // Can Processing save under this root?
+  boolean reachable(String root) {
+    java.nio.file.Path p = java.nio.file.Paths.get(sketchPath(root));
+    if (java.nio.file.Files.isDirectory(p)) {
+      return true;                     // a real folder, or a link to one
+    }
+    if (java.nio.file.Files.isSymbolicLink(p) || java.nio.file.Files.exists(p)) {
+      return false;                    // a link to nowhere, or a file in the way
+    }
+    // Not made yet. Processing creates it, but only if its parent exists:
+    // never create a stand-in for an unmounted /Volumes/<drive>.
+    File parent = p.toFile().getParentFile();
+    return parent != null && parent.isDirectory();
+  }
+
+  // The root to save under right now.
+  String activeRoot(String root, String localRoot) {
+    return reachable(root) ? root : localRoot;
+  }
+
+  // Track whether storage is reachable, and say so when it changes.
+  void checkStorage() {
+    lastStorageCheck = millis();
+    boolean framesOk = reachable(frameRoot);
+    boolean snapsOk  = reachable(snapRoot);
+    boolean offline  = !framesOk || !snapsOk;
+    if (offline && !storageOffline) {
+      println("\n*** snapcap: STORAGE OFFLINE ***");
+      if (!framesOk) println("    " + frameRoot + " can't be reached, frames go to " + localFrameRoot);
+      if (!snapsOk)  println("    " + snapRoot + " can't be reached, snaps go to " + localSnapRoot);
+      println("    (drive unplugged, or the link points nowhere)\n");
+    } else if (!offline && storageOffline) {
+      println("\n*** snapcap: storage is back. New takes and snaps go to "
+        + frameRoot + " and " + snapRoot + "\n");
+    }
+    storageOffline = offline;
   }
 
   /*//////////////////////////////////////////////////
@@ -168,19 +365,40 @@ public class Snapcap {
       text("REC  " + sequencePath, 28, 8);
     } else {
       fill(255, 120);
-      text("snapcap: 'r' record, ENTER snap, 'd' hide", 10, 8);
+      text("snapcap: " + keyName(recordKey) + " record, " + keyName(snapKey) + " snap, "
+        + keyName(overlayKey) + " hide", 10, 8);
     }
     popStyle();
+  }
+
+  void drawStorageWarning() {
+    pushStyle();
+    noStroke();
+    textAlign(LEFT, TOP);
+    textSize(14);
+    fill(0, 160);
+    rect(0, 28, width, 22);
+    fill(255, 200, 0);
+    text("STORAGE OFFLINE: saving to " + localFrameRoot + " and " + localSnapRoot, 10, 32);
+    popStyle();
+  }
+
+  String pad(String s) {
+    while (s.length() < 8) s += " ";
+    return s;
   }
 
   void printInstructions() {
     println("");
     println("                 snapcap keys");
     println("          -----------------------------------");
-    println("   '" + recordKey + "'     start/stop recording frames to " + frameRoot + version + "/");
-    println("   <ENTER> snap a single frame to " + snapRoot + version + "/");
-    println("   'd'     show/hide the on-screen status");
-    println("   'i'     print these instructions");
+    if (!keysOn) {
+      println("   keys are off");
+    }
+    println("   " + pad(keyName(recordKey))  + "start/stop recording frames to " + frameRoot + version + "/");
+    println("   " + pad(keyName(snapKey))    + "snap a single frame to " + snapRoot + version + "/");
+    println("   " + pad(keyName(overlayKey)) + "show/hide the on-screen status");
+    println("   " + pad(keyName(helpKey))    + "print these instructions");
     println("          -----------------------------------");
     println("");
   }

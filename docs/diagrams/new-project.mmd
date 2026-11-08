@@ -16,10 +16,12 @@ flowchart TD
     subgraph BUILD ["Build the project folder"]
         H --> I["Copy Snapcap.pde<br/>from snapcap_util"]
         I --> J["Fill templates with name,<br/>version, release, date:<br/>sketch, README, gitignore"]
-        J --> K["Write .snapcap<br/>release and date"]
+        J --> K["Write snapcap.json<br/>settings, release and date"]
     end
 
     K --> L{"SNAP_STORAGE_DIR set?"}
-    L -->|yes| M["Link frames and snaps<br/>into central storage"] --> N
+    L -->|yes| L2{"Storage folder there?<br/>drive mounted"}
+    L2 -->|yes| M["Link frames and snaps<br/>into central storage"] --> N
+    L2 -->|no| W["Warn, keep frames<br/>and snaps in the sketch"] --> N
     L -->|no| N["git init, commit,<br/>tag the version"]
     N --> O["Open the .pde in Processing<br/>and press Run"]
