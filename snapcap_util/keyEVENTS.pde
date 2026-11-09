@@ -19,6 +19,7 @@ void keyPressed() {
   } else if (key == TAB) {
     clearPGraphic(imagelayer.offScreenBuffer);
     clearPGraphic(imagelayer.displayLayer);
+    imagelayer.lastScreen = null;
   }
 }
 

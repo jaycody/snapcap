@@ -2,6 +2,7 @@ class ImageLayer {
 
   PGraphics offScreenBuffer;
   PGraphics displayLayer;
+  PImage    lastScreen;   // last frame's screen, fed back in: the loop
 
   ImageLayer() {
     offScreenBuffer   = createGraphics(width, height, P2D);
@@ -10,6 +11,14 @@ class ImageLayer {
 
   void ready() {
     background(0);
+
+    // FEEDBACK: draw last frame back in, a bit bigger and a bit faded,
+    // like a camera pointed at its own monitor
+    if (lastScreen != null) {
+      tint(255, 235);
+      image(lastScreen, -6, -3, width + 12, height + 6);
+      noTint();
+    }
 
     // Draw to offScreenBuffer
     offScreenBuffer.beginDraw();
@@ -30,5 +39,8 @@ class ImageLayer {
     // Show displayLayer
     image(displayLayer, 100, 100, mouseX, mouseY);
     image(displayLayer, mouseX, mouseY, 200, 200);
+
+    // Grab what's on screen now, so next frame can draw it back in
+    lastScreen = get();
   }
 }
