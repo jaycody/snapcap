@@ -32,7 +32,7 @@ Step by step:
 1. **Gather.** The name, version and parent folder come from the arguments. Anything missing is asked for, with defaults in brackets.
 2. **Check.** It stops before writing anything if the name isn't a valid Processing sketch name, the version has characters that would break a folder name, the parent folder doesn't exist, or the project folder already exists. Nothing gets overwritten.
 3. **Build.** It copies `Snapcap.pde` and fills the files in `template/`, swapping `__PROJECT__`, `__VERSION__`, `__SNAPCAP_RELEASE__` and `__DATE__` for real values. Only the files a sketch needs are copied: no `.git`, demo layers or notes.
-4. **Link storage (optional).** If `SNAP_STORAGE_DIR` is set (for example `~/Dropbox/_SNAPS`), the sketch's `frames` and `snaps` folders become links into `$SNAP_STORAGE_DIR/myArt/`, so big image files land in central storage instead of next to the code. The folders themselves are the links, not each file: open `frames/` in the sketch and you see the real TIFFs in storage. If `SNAP_STORAGE_DIR` doesn't exist (drive not mounted), no links are made, nothing is created in its place, and output stays in the sketch.
+4. **Link storage (optional).** If `SNAP_STORAGE_DIR` is set (for example `~/Dropbox/_SNAPS`), the sketch's `frames` and `snaps` folders become links into `$SNAP_STORAGE_DIR/myArt/`, so big image files land in central storage instead of next to the code. The folders themselves are the links, not each file: open `frames/` in the sketch and you see the real images in storage. If `SNAP_STORAGE_DIR` doesn't exist (drive not mounted), no links are made, nothing is created in its place, and output stays in the sketch.
 5. **Version.** It runs `git init`, commits, and tags that first commit with the version. Snapcap reads its version from git, so the first frame you record is already labeled `v0.1.0`. Tag again (`git tag v0.2.0`) and new output gets the new label.
 
 What you get:
@@ -78,8 +78,8 @@ Snapcap hooks itself into the sketch with `registerMethod`, so it always capture
 
 Output:
 
-- Snaps: `snaps/<version>/<project>-yyyymmdd-hhmmss-<millis>-<version>.tif`
-- Frames: `frames/<version>/<start time>/yyyymmdd-hhmmss-#######.tif`, one folder per recording
+- Snaps: `snaps/<version>/<project>-yyyymmdd-hhmmss-<millis>-<version>.png`
+- Frames: `frames/<version>/<start time>/yyyymmdd-hhmmss-#######.tga`, one folder per recording
 
 ### Settings: snapcap.json
 
@@ -95,7 +95,7 @@ Put a `snapcap.json` next to your `.pde` and Snapcap reads it at startup. `snap_
     "snapsLocal": "./snaps_local/"
   },
   "keys": { "enabled": true, "record": "r", "snap": "ENTER", "overlay": "d", "help": "i" },
-  "format": { "frames": "tif", "snaps": "tif" },
+  "format": { "frames": "tga", "snaps": "png" },
   "overlay": { "show": true }
 }
 ```
@@ -107,7 +107,7 @@ Put a `snapcap.json` next to your `.pde` and Snapcap reads it at startup. `snap_
 | `storage.framesLocal`, `storage.snapsLocal` | Where they go instead when storage can't be reached. |
 | `keys.enabled` | `false` turns off all Snapcap keys. |
 | `keys.record`, `keys.snap`, `keys.overlay`, `keys.help` | A single character, or `ENTER`, `SPACE` or `TAB`. |
-| `format.frames`, `format.snaps` | `tif`, `tga`, `png` or `jpg`. TGA saves fastest; PNG and JPG are smaller. |
+| `format.frames`, `format.snaps` | `tif`, `tga`, `png` or `jpg`. Defaults: `tga` for frames (lossless, fastest to save, about half the size of TIFF) and `png` for snaps (lossless, smallest, opens anywhere). JPG is smallest but loses quality. |
 | `overlay.show` | Whether the on-screen status starts visible. |
 
 Every field is optional. Anything missing, misspelled or invalid keeps its default, and a sketch with no `snapcap.json` at all works exactly as before. The version is never in the file: it always comes live from git, so it can't go stale.

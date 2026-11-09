@@ -17,8 +17,8 @@
     "help": "i"
   },
   "format": {
-    "frames": "tif",
-    "snaps": "tif"
+    "frames": "tga",
+    "snaps": "png"
   },
   "overlay": {
     "show": true

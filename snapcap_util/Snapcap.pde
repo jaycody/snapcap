@@ -19,9 +19,10 @@
  *         'i' print these instructions
  *
  * Output:
- *   snaps:   <snapRoot>/<VERSION>/<PROJ>-yyyymmdd-hhmmss-<millis>-<VERSION>.tif
- *   frames:  <frameRoot>/<VERSION>/yyyymmdd-hhmmss/yyyymmdd-hhmmss-#######.tif
- *            (.tif by default; snapcap.json can pick tga, png or jpg)
+ *   snaps:   <snapRoot>/<VERSION>/<PROJ>-yyyymmdd-hhmmss-<millis>-<VERSION>.png
+ *   frames:  <frameRoot>/<VERSION>/yyyymmdd-hhmmss/yyyymmdd-hhmmss-#######.tga
+ *            (frames .tga and snaps .png by default; snapcap.json can
+ *            pick tif, tga, png or jpg. TGA saves fastest, PNG is smallest)
  *            (one folder per recording, named by its start time)
  *
  * Settings: snapcap.json in the sketch folder, if there is one, sets
@@ -61,8 +62,8 @@ public class Snapcap {
   char     helpKey    = 'i';
   boolean  keysOn     = true;
 
-  String   frameFormat = "tif";
-  String   snapFormat  = "tif";
+  String   frameFormat = "tga";   // lossless and fastest to save
+  String   snapFormat  = "png";   // lossless, smallest, opens anywhere
   String   configFile  = "snapcap.json";
 
   // Version detected from git
@@ -148,7 +149,7 @@ public class Snapcap {
                     "framesLocal": "./frames_local/", "snapsLocal": "./snaps_local/" },
        "keys":    { "enabled": true, "record": "r", "snap": "ENTER",
                     "overlay": "d", "help": "i" },
-       "format":  { "frames": "tif", "snaps": "tif" },
+       "format":  { "frames": "tga", "snaps": "png" },
        "overlay": { "show": true }
      }
    The version is not in the file: it always comes live from git. */
