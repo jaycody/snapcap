@@ -330,7 +330,7 @@ public class Snapcap {
         .directory(new File(sketchPath()))
         .redirectErrorStream(true)
         .start();
-      String out = new BufferedReader(new InputStreamReader(git.getInputStream())).readLine();
+      String out = new BufferedReader(new java.io.InputStreamReader(git.getInputStream())).readLine();
       if (git.waitFor() == 0 && out != null && out.trim().length() > 0) {
         return out.trim().replace('/', '_');  // a tag like "release/1.0" must not add folders
       }
