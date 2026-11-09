@@ -82,6 +82,7 @@ public class Snapcap {
 
     registerMethod("draw", this);
     registerMethod("keyEvent", this);
+    registerMethod("dispose", this);
 
     loadConfig();
     printInstructions();
@@ -101,7 +102,7 @@ public class Snapcap {
         checkStorage();
         println("*** snapcap: rest of this take goes to " + sequencePath + "\n");
       }
-      saveFrame(sequencePath + timestamp(true) + "-#######." + frameFormat);
+      writeLater(sequencePath + timestamp(true) + "-" + nf(frameCount, 7) + "." + frameFormat);
     }
     // Drawn after the save, so it shows on screen but never in a frame.
     if (showStatus) {
@@ -266,9 +267,58 @@ public class Snapcap {
     checkStorage();
     String snapID = activeRoot(snapRoot, localSnapRoot) + version + "/" + project + "-"
       + timestamp(true) + "-" + nf(millis(), 6) + "-" + version + "." + snapFormat;
-    save(snapID);
+    writeLater(snapID);
     println("\n\tOHH SNAAAP ---> " + snapID + "\n");
     return snapID;
+  }
+
+  /*//////////////////////////////////////////////////
+   BACKGROUND WRITER
+   Encoding and writing a big image takes far longer than one frame,
+   so draw() only copies the screen and hands the copy to a few writer
+   threads. If the disk falls behind and the queue fills up, draw()
+   writes that frame itself: the sketch slows down, but no frame is
+   ever dropped. Everything queued is written before the sketch exits. */
+  int writerThreads = 3;
+  int writerQueue   = 30;   // about 300 MB of frames at 2560x960
+  java.util.concurrent.ThreadPoolExecutor writer;
+
+  void writeLater(String path) {
+    final PImage shot = get();          // copy of the screen, at full pixel density
+    shot.format = RGB;                  // no alpha, same as saveFrame()
+    final String file = savePath(path);
+    createPath(file);                   // make the folders now, on this thread
+    if (writer == null) {
+      writer = new java.util.concurrent.ThreadPoolExecutor(
+        writerThreads, writerThreads, 0L, java.util.concurrent.TimeUnit.MILLISECONDS,
+        new java.util.concurrent.ArrayBlockingQueue<Runnable>(writerQueue),
+        new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
+    }
+    writer.execute(new Runnable() {
+      public void run() {
+        if (!shot.save(file)) {
+          println("*** snapcap: couldn't write " + file);
+        }
+      }
+    });
+  }
+
+  // Frames still waiting to be written
+  int pendingWrites() {
+    return writer == null ? 0 : writer.getQueue().size() + writer.getActiveCount();
+  }
+
+  // Called by Processing when the sketch closes: finish every write.
+  public void dispose() {
+    if (writer == null) return;
+    int left = pendingWrites();
+    if (left > 0) println("snapcap: finishing " + left + " frames...");
+    writer.shutdown();
+    try {
+      writer.awaitTermination(2, java.util.concurrent.TimeUnit.MINUTES);
+    }
+    catch (InterruptedException e) {
+    }
   }
 
   /*//////////////////////////////////////////////////
