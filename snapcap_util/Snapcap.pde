@@ -409,14 +409,15 @@ public class Snapcap {
     noStroke();
     textAlign(LEFT, TOP);
     textSize(14);
+    String fps = round(frameRate) + " fps";
     if (recordIsOn) {
       fill(255, 0, 0);
       ellipse(16, 16, 12, 12);
       fill(255);
-      text("REC  " + sequencePath, 28, 8);
+      text("REC  " + fps + "  " + sequencePath, 28, 8);
     } else {
       fill(255, 120);
-      text("snapcap: " + keyName(recordKey) + " record, " + keyName(snapKey) + " snap, "
+      text("snapcap: " + fps + "  " + keyName(recordKey) + " record, " + keyName(snapKey) + " snap, "
         + keyName(overlayKey) + " hide", 10, 8);
     }
     popStyle();
