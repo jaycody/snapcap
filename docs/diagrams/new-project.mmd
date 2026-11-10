@@ -9,12 +9,14 @@ flowchart TD
     E -->|no| X
     E -->|yes| F{"Parent folder given?"}
     F -->|no| F1["Show the full path, e.g. ~/jaycode/myArt<br/>Enter or y = create, n = cancel,<br/>or type another folder<br/>default: SNAP_PROJECTS_DIR, JAY_SPACE, here"] --> G
+    F1 -->|n| X
     F -->|yes| G{"Parent exists and<br/>project folder is new?"}
     G -->|no| X
-    G -->|"yes, in a terminal"| SA["Show the media paths:<br/>storage/name-media/frames and /snaps<br/>storage = SNAP_STORAGE_DIR, else ~/snapcap-media"]
+    G -->|"yes, in a terminal"| SA["Show the media paths:<br/>storage/name-media/frames and /snaps<br/>storage = SNAP_STORAGE_DIR, else ~/snapcap-media<br/>~/snapcap-media is made if missing"]
     SA -->|"Enter or y"| SC
     SA -->|"n: keep in the sketch"| H
     SA -->|"typed another folder"| SB["Create it if missing (asks),<br/>offer to save it in jayci .jayrc"] --> SC
+    SB -->|"no, don't create it"| H
     G -->|"yes, no terminal"| SQ{"SNAP_STORAGE_DIR set?"}
     SQ -->|yes| SC
     SQ -->|no| H
