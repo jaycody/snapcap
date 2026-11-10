@@ -2,10 +2,12 @@ flowchart TD
     A["setup: new Snapcap with your project name"] --> G["Ask git for the version<br/>for example v1.1.0-2-g47fc45b-dirty<br/>or nogit if git is not found"]
     G --> CF["Read snapcap.json if there is one<br/>folders, keys, format, overlay"]
     CF --> R["Register hooks with Processing<br/>registerMethod draw, keyEvent and dispose"]
+    R --> AK["Optional, in your setup:<br/>snapcap.addKey('l', &quot;layer labels&quot;)<br/>lists your own keys next to Snapcap's"]
 
     subgraph EVERY ["Every frame, automatically"]
         D1["Your draw makes the art"] --> D2["Snapcap draw runs right after"]
-        D2 --> Q{"Recording?"}
+        D2 --> FIRST["First frame only: print the key list<br/>Snapcap's keys, then your addKey keys"]
+        FIRST --> Q{"Recording?"}
         Q -->|yes| ST{"Storage reachable?<br/>link or drive there"}
         ST -->|yes| CP["Copy the screen<br/>and name the frame"]
         ST -->|no| CL["Copy the screen, aim it at frames_local<br/>and warn on screen"]
@@ -13,7 +15,7 @@ flowchart TD
         CL --> QF
         QF -->|no| EN["Hand the copy to the queue<br/>draw moves on at full speed"]
         QF -->|"yes, disk is behind"| SELF["draw writes this frame itself<br/>slower, but no frame is dropped"]
-        Q -->|no| OV["Draw the REC overlay<br/>after the copy, so it is never captured"]
+        Q -->|no| OV["Draw the status overlay: REC, or the key hint<br/>with your addKey keys<br/>after the copy, so it is never captured"]
         EN --> OV
         SELF --> OV
     end
@@ -31,8 +33,8 @@ flowchart TD
 
     X["Sketch closes: dispose<br/>finish every queued write first"]
 
-    R --> D1
-    R --> K
+    AK --> D1
+    AK --> K
     T -.->|switches recording| Q
     EN -.-> W
     S -.->|same queue| W

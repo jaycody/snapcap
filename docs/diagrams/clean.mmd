@@ -14,7 +14,7 @@ flowchart TD
 
     subgraph SAFE ["_snap_clean_dir folder : once per folder"]
         D0["dir = SNAPCAP_HOME/snapcap_util/folder<br/>SNAPCAP_HOME = where snapcap.sh lives<br/>stops if it isn't set"]
-        D0 --> D1{"dir is a link?<br/>e.g. to ~/Dropbox/_SNAPS"}
+        D0 --> D1{"dir is a link?<br/>e.g. to ~/snapcap-media/name-media"}
         D1 -->|yes| K1["skip: is a link to external storage<br/>nothing touched"]
         D1 -->|no| D2{"dir exists?"}
         D2 -->|no| K2["skip: not there"]
