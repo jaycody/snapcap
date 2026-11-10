@@ -22,9 +22,10 @@ SNAPCAP_HOME="${SNAPCAP_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}
 # then runs git init, commits, and tags <version>, so the very first
 # frames are labeled with it.
 #
-# Usage:  snap_new_project [name] [version] [parent dir]
-#   version defaults to v0.0.1 and is never asked for (2026-11-09).
-#   snap_new_project myArt ~/sketches  also works: a folder in 2nd place is the parent.
+# Usage:  snap_new_project [name] [parent dir]
+#   2026-11-10: no version argument. Every project starts at v0.0.1: the
+#   script tags the first commit, and Snapcap reads the version from git.
+#   Later versions come from git tag (git tag v0.0.2). Old usage in FOSSIL RECORD.
 #   Anything left out is asked for. The parent defaults to
 #   $SNAP_PROJECTS_DIR, then $JAY_SPACE, then the current directory.
 #
@@ -37,11 +38,14 @@ SNAPCAP_HOME="${SNAPCAP_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)}
 snap_new_project () {
     # 2026-11-09: --help / -h shows help instead of failing as a sketch name
     case "$1" in -h|--help) snap_help; return 0 ;; esac
-    local name="$1" version="$2" parent="$3"
-    # 2026-11-09: version is optional, so "myArt ~/sketches" means name + parent.
-    if [ -z "$parent" ] && { [ -d "$version" ] || case "$version" in */*|"~"*) true ;; *) false ;; esac; }; then
-        parent="$version"
-        version=""
+    # 2026-11-10: just name and parent. The version is always v0.0.1.
+    # Old 3-part form (name version parent) is refused, not guessed at.
+    local name="$1" parent="$2" version="v0.0.1"
+    if [ $# -gt 2 ] || { [ -n "$parent" ] && [ ! -d "$parent" ] && case "$parent" in v[0-9]*) true ;; *) false ;; esac; }; then
+        echo "snap_new_project: there's no version argument anymore." >&2
+        echo "  Use: snap_new_project [name] [parent folder]. Every project starts at v0.0.1;" >&2
+        echo "  later, inside the project: git tag v0.0.2" >&2
+        return 1
     fi
     local default_parent="${SNAP_PROJECTS_DIR:-${JAY_SPACE:-$PWD}}"
 
@@ -59,13 +63,7 @@ snap_new_project () {
     esac
 
     # 2026-11-09: every new project starts at v0.0.1 -- no question.
-    # Old prompt in FOSSIL RECORD.
-    version="${version:-v0.0.1}"
-    case "$version" in
-        *[!A-Za-z0-9._-]*)
-            echo "snap_new_project: version '$version' can only use letters, digits, '.', '_' and '-'." >&2
-            return 1 ;;
-    esac
+    # 2026-11-10: version check moved to FOSSIL RECORD (nobody passes one now).
 
     if [ -z "$parent" ]; then
         # 2026-11-09: was "Create it in [dir]: ", which read like a yes/no
@@ -348,7 +346,7 @@ snap_help () {
     Repo: ${SNAPCAP_HOME}
 
     -----------SHELL COMMANDS-------------
-    snap_new_project [name] [version] [parent]   (version: v0.0.1)
+    snap_new_project [name] [parent]   (starts at v0.0.1)
                     new Processing sketch with Snapcap built in.
                     Anything left out is asked for.
                     parent: \$SNAP_PROJECTS_DIR, else \$JAY_SPACE, else here
@@ -472,4 +470,26 @@ fi
 #         read -r version
 #         version="${version:-v0.1.0}"
 #     fi
+
+# WHY (2026-11-10): no version argument. Every project starts at v0.0.1; the
+# script tags the first commit and Snapcap reads the version from git.
+# Old usage comment:
+# # Usage:  snap_new_project [name] [version] [parent dir]
+# #   version defaults to v0.0.1 and is never asked for (2026-11-09).
+# #   snap_new_project myArt ~/sketches  also works: a folder in 2nd place is the parent.
+# Old argument handling:
+#     local name="$1" version="$2" parent="$3"
+#     # 2026-11-09: version is optional, so "myArt ~/sketches" means name + parent.
+#     if [ -z "$parent" ] && { [ -d "$version" ] || case "$version" in */*|"~"*) true ;; *) false ;; esac; }; then
+#         parent="$version"
+#         version=""
+#     fi
+#     version="${version:-v0.0.1}"
+#     case "$version" in
+#         *[!A-Za-z0-9._-]*)
+#             echo "snap_new_project: version '$version' can only use letters, digits, '.', '_' and '-'." >&2
+#             return 1 ;;
+#     esac
+# Old help line:
+#     snap_new_project [name] [version] [parent]   (version: v0.0.1)
 ###############################################################
