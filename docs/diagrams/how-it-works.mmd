@@ -1,30 +1,43 @@
 flowchart TD
     A["setup: new Snapcap with your project name"] --> G["Ask git for the version<br/>for example v1.1.0-2-g47fc45b-dirty<br/>or nogit if git is not found"]
     G --> CF["Read snapcap.json if there is one<br/>folders, keys, format, overlay"]
-    CF --> R["Register hooks with Processing<br/>registerMethod draw and keyEvent"]
+    CF --> R["Register hooks with Processing<br/>registerMethod draw, keyEvent and dispose"]
 
     subgraph EVERY ["Every frame, automatically"]
         D1["Your draw makes the art"] --> D2["Snapcap draw runs right after"]
         D2 --> Q{"Recording?"}
         Q -->|yes| ST{"Storage reachable?<br/>link or drive there"}
-        ST -->|yes| SF["saveFrame writes one TIFF"]
-        ST -->|no| SL["saveFrame writes to frames_local<br/>and warns on screen"]
-        Q -->|no| OV["Draw the REC overlay<br/>after the save, so it is never captured"]
-        SF --> OV
-        SL --> OV
+        ST -->|yes| CP["Copy the screen<br/>and name the frame"]
+        ST -->|no| CL["Copy the screen, aim it at frames_local<br/>and warn on screen"]
+        CP --> QF{"Write queue full?<br/>30 frames waiting"}
+        CL --> QF
+        QF -->|no| EN["Hand the copy to the queue<br/>draw moves on at full speed"]
+        QF -->|"yes, disk is behind"| SELF["draw writes this frame itself<br/>slower, but no frame is dropped"]
+        Q -->|no| OV["Draw the REC overlay<br/>after the copy, so it is never captured"]
+        EN --> OV
+        SELF --> OV
     end
 
-    subgraph KEYS ["On key press, alongside your keyPressed"]
+    subgraph WRITERS ["Writer threads"]
+        W["Take the next copy from the queue<br/>encode the image and write the file"]
+    end
+
+    subgraph KEYS ["On every key press"]
         K{"Which key?"}
         K -->|r| T["Start or stop a take<br/>new folder named by its start time"]
-        K -->|ENTER| S["save writes one snap<br/>to snaps_local if storage is offline"]
+        K -->|ENTER| S["Copy the screen as a snap<br/>to snaps_local if storage is offline"]
         K -->|d or i| H["Toggle overlay or print key list"]
     end
+
+    X["Sketch closes: dispose<br/>finish every queued write first"]
 
     R --> D1
     R --> K
     T -.->|switches recording| Q
+    EN -.-> W
+    S -.->|same queue| W
+    X -.->|waits for| W
 
-    SF --> FR[("frames / VERSION / TAKE START TIME /<br/>TIME-FRAMECOUNT.tif")]
-    SL --> FL[("frames_local / same folders")]
-    S --> SN[("snaps / VERSION /<br/>PROJECT-TIME-MILLIS-VERSION.tif")]
+    W --> FR[("frames / VERSION / TAKE START TIME /<br/>TIME-FRAMECOUNT.tga")]
+    W --> FL[("frames_local / same folders")]
+    W --> SN[("snaps / VERSION /<br/>PROJECT-TIME-MILLIS-VERSION.png")]

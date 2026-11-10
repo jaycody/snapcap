@@ -33,7 +33,7 @@
     Path cfg = Paths.get(sk, "snapcap.json");
     Snapcap d = t.new Snapcap("t", "v1");
     check("no settings file: defaults", d.recordKey == 'r' && d.snapKey == ENTER
-      && d.frameFormat.equals("tif") && d.showStatus && d.keysOn);
+      && d.frameFormat.equals("tga") && d.snapFormat.equals("png") && d.showStatus && d.keysOn);
     Files.write(cfg, ("{\"storage\": {\"frames\": \"/Volumes/Art/frames\"},"
       + " \"keys\": {\"record\": \"R\", \"snap\": \"SPACE\", \"help\": \"h\"},"
       + " \"format\": {\"frames\": \"PNG\", \"snaps\": \"jpeg\"},"
@@ -46,7 +46,7 @@
     check("settings: overlay hidden", !c.showStatus);
     Files.write(cfg, "{\"keys\": {\"record\": \"rec\", \"enabled\": \"maybe\"}, \"format\": {\"frames\": \"gif\"}}".getBytes());
     Snapcap b = t.new Snapcap("t", "v1");
-    check("bad values keep defaults", b.recordKey == 'r' && b.keysOn && b.frameFormat.equals("tif"));
+    check("bad values keep defaults", b.recordKey == 'r' && b.keysOn && b.frameFormat.equals("tga"));
     Files.write(cfg, "{ not json".getBytes());
     Snapcap m = t.new Snapcap("t", "v1");
     check("broken file keeps defaults", m.recordKey == 'r' && m.frameRoot.equals("./frames/"));

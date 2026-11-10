@@ -21,9 +21,16 @@ ImageLayer imagelayer;
 void setup() {
   size(1280, 480, P2D);
 
+  // Frames come out at exactly size(), even on a Retina screen.
+  // Delete this line for sharper frames at 2x the size (4x the disk space).
+  pixelDensity(1);
+
   // One line. Snapcap hooks itself into draw() and the keyboard.
   snapcap    = new Snapcap(PROJ);
   imagelayer = new ImageLayer();
+
+  // List the demo's own key with Snapcap's (handled in keyEVENTS.pde)
+  snapcap.addKey('l', "layer labels");
 }
 
 void draw() {

@@ -10,3 +10,7 @@ application.macosx
 out
 *.tif
 tests/.cache/
+snapcap_util/frames/
+snapcap_util/snaps/
+snapcap_util/frames_local/
+snapcap_util/snaps_local/

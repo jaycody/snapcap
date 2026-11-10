@@ -19,9 +19,10 @@
  *         'i' print these instructions
  *
  * Output:
- *   snaps:   <snapRoot>/<VERSION>/<PROJ>-yyyymmdd-hhmmss-<millis>-<VERSION>.tif
- *   frames:  <frameRoot>/<VERSION>/yyyymmdd-hhmmss/yyyymmdd-hhmmss-#######.tif
- *            (.tif by default; snapcap.json can pick tga, png or jpg)
+ *   snaps:   <snapRoot>/<VERSION>/<PROJ>-yyyymmdd-hhmmss-<millis>-<VERSION>.png
+ *   frames:  <frameRoot>/<VERSION>/yyyymmdd-hhmmss/yyyymmdd-hhmmss-#######.tga
+ *            (frames .tga and snaps .png by default; snapcap.json can
+ *            pick tif, tga, png or jpg. TGA saves fastest, PNG is smallest)
  *            (one folder per recording, named by its start time)
  *
  * Settings: snapcap.json in the sketch folder, if there is one, sets
@@ -61,8 +62,8 @@ public class Snapcap {
   char     helpKey    = 'i';
   boolean  keysOn     = true;
 
-  String   frameFormat = "tif";
-  String   snapFormat  = "tif";
+  String   frameFormat = "tga";   // lossless and fastest to save
+  String   snapFormat  = "png";   // lossless, smallest, opens anywhere
   String   configFile  = "snapcap.json";
 
   // Version detected from git
@@ -82,14 +83,32 @@ public class Snapcap {
 
     registerMethod("draw", this);
     registerMethod("keyEvent", this);
+    registerMethod("dispose", this);
 
     loadConfig();
-    printInstructions();
+    // The key list prints on the first frame, so keys the sketch adds
+    // with addKey() in setup() make it into the list.
+  }
+
+  /*//////////////////////////////////////////////////
+   SKETCH KEYS: list your own keys next to Snapcap's, in the overlay
+   and the printed key list. Snapcap only lists them; the sketch's
+   keyPressed() still handles them.
+     snapcap.addKey('l', "layer labels"); */
+  java.util.ArrayList<String[]> sketchKeys = new java.util.ArrayList<String[]>();
+  boolean instructionsShown = false;
+
+  void addKey(char k, String what) {
+    sketchKeys.add(new String[] { keyName(k), what });
   }
 
   /*//////////////////////////////////////////////////
    CALLED BY PROCESSING after every sketch draw() */
   public void draw() {
+    if (!instructionsShown) {
+      instructionsShown = true;
+      printInstructions();
+    }
     if (millis() - lastStorageCheck > 1000) {
       checkStorage();
     }
@@ -101,7 +120,7 @@ public class Snapcap {
         checkStorage();
         println("*** snapcap: rest of this take goes to " + sequencePath + "\n");
       }
-      saveFrame(sequencePath + timestamp(true) + "-#######." + frameFormat);
+      writeLater(sequencePath + timestamp(true) + "-" + nf(frameCount, 7) + "." + frameFormat);
     }
     // Drawn after the save, so it shows on screen but never in a frame.
     if (showStatus) {
@@ -147,7 +166,7 @@ public class Snapcap {
                     "framesLocal": "./frames_local/", "snapsLocal": "./snaps_local/" },
        "keys":    { "enabled": true, "record": "r", "snap": "ENTER",
                     "overlay": "d", "help": "i" },
-       "format":  { "frames": "tif", "snaps": "tif" },
+       "format":  { "frames": "tga", "snaps": "png" },
        "overlay": { "show": true }
      }
    The version is not in the file: it always comes live from git. */
@@ -266,9 +285,58 @@ public class Snapcap {
     checkStorage();
     String snapID = activeRoot(snapRoot, localSnapRoot) + version + "/" + project + "-"
       + timestamp(true) + "-" + nf(millis(), 6) + "-" + version + "." + snapFormat;
-    save(snapID);
+    writeLater(snapID);
     println("\n\tOHH SNAAAP ---> " + snapID + "\n");
     return snapID;
+  }
+
+  /*//////////////////////////////////////////////////
+   BACKGROUND WRITER
+   Encoding and writing a big image takes far longer than one frame,
+   so draw() only copies the screen and hands the copy to a few writer
+   threads. If the disk falls behind and the queue fills up, draw()
+   writes that frame itself: the sketch slows down, but no frame is
+   ever dropped. Everything queued is written before the sketch exits. */
+  int writerThreads = 3;
+  int writerQueue   = 30;   // about 300 MB of frames at 2560x960
+  java.util.concurrent.ThreadPoolExecutor writer;
+
+  void writeLater(String path) {
+    final PImage shot = get();          // copy of the screen, at full pixel density
+    shot.format = RGB;                  // no alpha, same as saveFrame()
+    final String file = savePath(path);
+    createPath(file);                   // make the folders now, on this thread
+    if (writer == null) {
+      writer = new java.util.concurrent.ThreadPoolExecutor(
+        writerThreads, writerThreads, 0L, java.util.concurrent.TimeUnit.MILLISECONDS,
+        new java.util.concurrent.ArrayBlockingQueue<Runnable>(writerQueue),
+        new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
+    }
+    writer.execute(new Runnable() {
+      public void run() {
+        if (!shot.save(file)) {
+          println("*** snapcap: couldn't write " + file);
+        }
+      }
+    });
+  }
+
+  // Frames still waiting to be written
+  int pendingWrites() {
+    return writer == null ? 0 : writer.getQueue().size() + writer.getActiveCount();
+  }
+
+  // Called by Processing when the sketch closes: finish every write.
+  public void dispose() {
+    if (writer == null) return;
+    int left = pendingWrites();
+    if (left > 0) println("snapcap: finishing " + left + " frames...");
+    writer.shutdown();
+    try {
+      writer.awaitTermination(2, java.util.concurrent.TimeUnit.MINUTES);
+    }
+    catch (InterruptedException e) {
+    }
   }
 
   /*//////////////////////////////////////////////////
@@ -330,7 +398,7 @@ public class Snapcap {
         .directory(new File(sketchPath()))
         .redirectErrorStream(true)
         .start();
-      String out = new BufferedReader(new InputStreamReader(git.getInputStream())).readLine();
+      String out = new BufferedReader(new java.io.InputStreamReader(git.getInputStream())).readLine();
       if (git.waitFor() == 0 && out != null && out.trim().length() > 0) {
         return out.trim().replace('/', '_');  // a tag like "release/1.0" must not add folders
       }
@@ -358,15 +426,20 @@ public class Snapcap {
     noStroke();
     textAlign(LEFT, TOP);
     textSize(14);
+    String fps = round(frameRate) + " fps";
     if (recordIsOn) {
       fill(255, 0, 0);
       ellipse(16, 16, 12, 12);
       fill(255);
-      text("REC  " + sequencePath, 28, 8);
+      text("REC  " + fps + "  " + sequencePath, 28, 8);
     } else {
+      String hint = "snapcap: " + fps + "  " + keyName(recordKey) + " record, " + keyName(snapKey) + " snap, "
+        + keyName(overlayKey) + " hide";
+      for (String[] k : sketchKeys) {
+        hint += ", " + k[0] + " " + k[1];
+      }
       fill(255, 120);
-      text("snapcap: " + keyName(recordKey) + " record, " + keyName(snapKey) + " snap, "
-        + keyName(overlayKey) + " hide", 10, 8);
+      text(hint, 10, 8);
     }
     popStyle();
   }
@@ -399,6 +472,13 @@ public class Snapcap {
     println("   " + pad(keyName(snapKey))    + "snap a single frame to " + snapRoot + version + "/");
     println("   " + pad(keyName(overlayKey)) + "show/hide the on-screen status");
     println("   " + pad(keyName(helpKey))    + "print these instructions");
+    if (sketchKeys.size() > 0) {
+      println("          -----------------------------------");
+      println("                 sketch keys");
+      for (String[] k : sketchKeys) {
+        println("   " + pad(k[0]) + k[1]);
+      }
+    }
     println("          -----------------------------------");
     println("");
   }

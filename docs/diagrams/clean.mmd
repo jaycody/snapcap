@@ -1,0 +1,33 @@
+%% snap_clean_* : empty snapcap's OWN media folders. Never external storage.
+flowchart TD
+    IN1(["Sourced at shell startup by jayci<br/>snap_clean_all"]) --> W
+    IN2(["Run directly, from any folder<br/>./snapcap.sh snap_clean_frames"]) --> W
+    W{"Which command?"}
+    W -->|snap_clean_frames| F["frames, then frames_local"]
+    W -->|snap_clean_snaps| S["snaps, then snaps_local"]
+    W -->|snap_clean_all| A["snap_clean_frames,<br/>then snap_clean_snaps"]
+    A --> F
+    A --> S
+
+    F --> D0
+    S --> D0
+
+    subgraph SAFE ["_snap_clean_dir folder : once per folder"]
+        D0["dir = SNAPCAP_HOME/snapcap_util/folder<br/>SNAPCAP_HOME = where snapcap.sh lives<br/>stops if it isn't set"]
+        D0 --> D1{"dir is a link?<br/>e.g. to ~/Dropbox/_SNAPS"}
+        D1 -->|yes| K1["skip: is a link to external storage<br/>nothing touched"]
+        D1 -->|no| D2{"dir exists?"}
+        D2 -->|no| K2["skip: not there"]
+        D2 -->|yes| D3{"Real path still inside<br/>snapcap/snapcap_util/?"}
+        D3 -->|no| K3["skip: resolves outside snapcap"]
+        D3 -->|yes| D4["Show contents: tree -Csha or ls -A"]
+        D4 --> D5["Delete everything inside, dot files too<br/>the folder itself stays<br/>a link inside is removed, not followed"]
+        D5 --> D6["Show it again, empty<br/>print folder deleted"]
+    end
+
+    N1["Folders it can empty, all git-ignored:<br/>snapcap_util/frames  snapcap_util/frames_local<br/>snapcap_util/snaps   snapcap_util/snaps_local<br/>Projects made by snap_new_project are never touched"]
+
+    classDef safe fill:#e8f5e9,stroke:#2e7d32,color:#333
+    classDef note fill:#fff4e0,stroke:#d08a00,color:#333
+    class K1,K2,K3 safe
+    class N1 note

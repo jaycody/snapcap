@@ -16,9 +16,12 @@ void keyPressed() {
   // <SPACE> wipes the background, <TAB> wipes the PGraphics layers
   if (key == ' ') {
     background(0);
+  } else if (key == 'l') {
+    imagelayer.showLabels = !imagelayer.showLabels;   // layer numbers on/off
   } else if (key == TAB) {
     clearPGraphic(imagelayer.offScreenBuffer);
     clearPGraphic(imagelayer.displayLayer);
+    imagelayer.lastScreen = null;
   }
 }
 
