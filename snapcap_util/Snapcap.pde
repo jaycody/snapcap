@@ -86,12 +86,29 @@ public class Snapcap {
     registerMethod("dispose", this);
 
     loadConfig();
-    printInstructions();
+    // The key list prints on the first frame, so keys the sketch adds
+    // with addKey() in setup() make it into the list.
+  }
+
+  /*//////////////////////////////////////////////////
+   SKETCH KEYS: list your own keys next to Snapcap's, in the overlay
+   and the printed key list. Snapcap only lists them; the sketch's
+   keyPressed() still handles them.
+     snapcap.addKey('l', "layer labels"); */
+  java.util.ArrayList<String[]> sketchKeys = new java.util.ArrayList<String[]>();
+  boolean instructionsShown = false;
+
+  void addKey(char k, String what) {
+    sketchKeys.add(new String[] { keyName(k), what });
   }
 
   /*//////////////////////////////////////////////////
    CALLED BY PROCESSING after every sketch draw() */
   public void draw() {
+    if (!instructionsShown) {
+      instructionsShown = true;
+      printInstructions();
+    }
     if (millis() - lastStorageCheck > 1000) {
       checkStorage();
     }
@@ -416,9 +433,13 @@ public class Snapcap {
       fill(255);
       text("REC  " + fps + "  " + sequencePath, 28, 8);
     } else {
+      String hint = "snapcap: " + fps + "  " + keyName(recordKey) + " record, " + keyName(snapKey) + " snap, "
+        + keyName(overlayKey) + " hide";
+      for (String[] k : sketchKeys) {
+        hint += ", " + k[0] + " " + k[1];
+      }
       fill(255, 120);
-      text("snapcap: " + fps + "  " + keyName(recordKey) + " record, " + keyName(snapKey) + " snap, "
-        + keyName(overlayKey) + " hide", 10, 8);
+      text(hint, 10, 8);
     }
     popStyle();
   }
@@ -451,6 +472,13 @@ public class Snapcap {
     println("   " + pad(keyName(snapKey))    + "snap a single frame to " + snapRoot + version + "/");
     println("   " + pad(keyName(overlayKey)) + "show/hide the on-screen status");
     println("   " + pad(keyName(helpKey))    + "print these instructions");
+    if (sketchKeys.size() > 0) {
+      println("          -----------------------------------");
+      println("                 sketch keys");
+      for (String[] k : sketchKeys) {
+        println("   " + pad(k[0]) + k[1]);
+      }
+    }
     println("          -----------------------------------");
     println("");
   }

@@ -28,6 +28,9 @@ void setup() {
   // One line. Snapcap hooks itself into draw() and the keyboard.
   snapcap    = new Snapcap(PROJ);
   imagelayer = new ImageLayer();
+
+  // List the demo's own key with Snapcap's (handled in keyEVENTS.pde)
+  snapcap.addKey('l', "layer labels");
 }
 
 void draw() {
