@@ -1,13 +1,11 @@
 flowchart TD
-    A["snap_new_project name version parent"] --> B{"Name given?"}
+    A["snap_new_project name parent<br/>both optional"] --> A0{"A version given too?<br/>e.g. myArt v2.0.0"}
+    A0 -->|"yes: no version argument,<br/>every project starts at v0.0.1"| X
+    A0 -->|no| B{"Name given?"}
     B -->|no| B1["Ask for it"] --> C
     B -->|yes| C{"Valid sketch name?<br/>letters, digits, _"}
     C -->|no| X["Stop with a message,<br/>nothing written"]
-    C -->|yes| D{"Version given?"}
-    D -->|no| D1["Use v0.0.1, no question"] --> E
-    D -->|yes| E{"Valid version?"}
-    E -->|no| X
-    E -->|yes| F{"Parent folder given?"}
+    C -->|yes| F{"Parent folder given?"}
     F -->|no| F1["Show the full path, e.g. ~/jaycode/myArt<br/>Enter or y = create, n = cancel,<br/>or type another folder<br/>default: SNAP_PROJECTS_DIR, JAY_SPACE, here"] --> G
     F1 -->|n| X
     F -->|yes| G{"Parent exists and<br/>project folder is new?"}
@@ -27,7 +25,7 @@ flowchart TD
 
     subgraph BUILD ["Build the project folder"]
         H --> I["Copy Snapcap.pde<br/>from snapcap_util"]
-        I --> J["Fill templates with name,<br/>version, release, date:<br/>sketch, README, gitignore"]
+        I --> J["Fill templates with name,<br/>v0.0.1, release, date:<br/>sketch, README, gitignore"]
         J --> K["Write snapcap.json<br/>settings, release and date"]
     end
 
@@ -35,6 +33,6 @@ flowchart TD
     L -->|yes| L2{"Storage folder there?<br/>drive mounted"}
     L2 -->|yes| M["Link frames and snaps<br/>to storage/name-media"] --> N
     L2 -->|no| W["Warn, keep frames<br/>and snaps in the sketch"] --> N
-    L -->|no| N["git init, commit,<br/>tag the version"]
+    L -->|no| N["git init, commit,<br/>tag v0.0.1<br/>Snapcap reads it from git"]
     N --> O["Open the .pde in Processing<br/>and press Run"]
     O --> P["cd into the new project folder"]
