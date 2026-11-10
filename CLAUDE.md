@@ -46,5 +46,8 @@ Processing versions) won't compile it.
 
 - If the sketch is open in the Processing IDE, it may not reload files changed
   on disk. Saving from the IDE then overwrites edits made outside it.
-- Commit locally on a branch; don't push or open a PR until Jason asks.
-- `docs/diagrams/render.sh` needs Node, which this Mac doesn't have.
+- Work on a branch; don't commit, push or open a PR until Jason asks (see below).
+- `docs/diagrams/render.sh` needs Node (installed with Homebrew) and uses the
+  installed Google Chrome to draw. `clean.mmd` documents the `snap_clean_*` commands.
+- Don't commit or push during work hours: GitHub shows the activity publicly.
+  Leave changes uncommitted until Jason says go.

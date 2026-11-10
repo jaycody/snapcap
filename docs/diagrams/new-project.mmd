@@ -4,14 +4,24 @@ flowchart TD
     B -->|yes| C{"Valid sketch name?<br/>letters, digits, _"}
     C -->|no| X["Stop with a message,<br/>nothing written"]
     C -->|yes| D{"Version given?"}
-    D -->|no| D1["Ask, default v0.1.0"] --> E
+    D -->|no| D1["Use v0.0.1, no question"] --> E
     D -->|yes| E{"Valid version?"}
     E -->|no| X
     E -->|yes| F{"Parent folder given?"}
-    F -->|no| F1["Ask, default SNAP_PROJECTS_DIR<br/>then JAY_SPACE then here"] --> G
+    F -->|no| F1["Show the full path, e.g. ~/jaycode/myArt<br/>Enter or y = create, n = cancel,<br/>or type another folder<br/>default: SNAP_PROJECTS_DIR, JAY_SPACE, here"] --> G
     F -->|yes| G{"Parent exists and<br/>project folder is new?"}
     G -->|no| X
-    G -->|yes| H["Read snapcap release<br/>git describe in this repo"]
+    G -->|"yes, in a terminal"| SA["Show the media paths:<br/>storage/name-media/frames and /snaps<br/>storage = SNAP_STORAGE_DIR, else ~/snapcap-media"]
+    SA -->|"Enter or y"| SC
+    SA -->|"n: keep in the sketch"| H
+    SA -->|"typed another folder"| SB["Create it if missing (asks),<br/>offer to save it in jayci .jayrc"] --> SC
+    G -->|"yes, no terminal"| SQ{"SNAP_STORAGE_DIR set?"}
+    SQ -->|yes| SC
+    SQ -->|no| H
+    SC{"storage/name-media<br/>already there?"}
+    SC -->|"yes: reuse? no"| X
+    SC -->|"no, or reuse: yes"| H
+    H["Read snapcap release<br/>git describe in this repo"]
 
     subgraph BUILD ["Build the project folder"]
         H --> I["Copy Snapcap.pde<br/>from snapcap_util"]
@@ -19,9 +29,10 @@ flowchart TD
         J --> K["Write snapcap.json<br/>settings, release and date"]
     end
 
-    K --> L{"SNAP_STORAGE_DIR set?"}
+    K --> L{"Storage chosen?"}
     L -->|yes| L2{"Storage folder there?<br/>drive mounted"}
-    L2 -->|yes| M["Link frames and snaps<br/>into central storage"] --> N
+    L2 -->|yes| M["Link frames and snaps<br/>to storage/name-media"] --> N
     L2 -->|no| W["Warn, keep frames<br/>and snaps in the sketch"] --> N
     L -->|no| N["git init, commit,<br/>tag the version"]
     N --> O["Open the .pde in Processing<br/>and press Run"]
+    O --> P["cd into the new project folder"]

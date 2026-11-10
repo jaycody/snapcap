@@ -11,13 +11,24 @@ A tool for recording, labeling, and organizing animation frames from Processing 
 
 Snapcap runs on its own once it's created: Processing calls it after every `draw()` and on every key press. Frames are film, one folder per take, ready to turn into video. Snaps are stills, one flat folder per version. Both are labeled with the git version that made them.
 
+## Help
+
+```bash
+snapcap --help        # with jayci; also snap_help
+./snapcap.sh --help   # without jayci (or just ./snapcap.sh)
+```
+
+Lists the shell commands, the keys inside a sketch, and the settings, with the
+current snapcap release at the top.
+
 ## Start a new project
 
 `snap_new_project` is a build script that stamps out a ready-to-run Processing sketch with Snapcap already wired in. Think of it as a cookie cutter: `template/` is the cutter, and every project it makes comes out the same shape, with its own name and version pressed in.
 
 ```bash
 source snapcap.sh                          # or via snapcap.cfg
-snap_new_project myArt v0.1.0 ~/sketches   # leave any part out to be asked
+snap_new_project myArt ~/sketches         # version is always v0.0.1
+snap_new_project myArt v2.0.0 ~/sketches  # unless you give one
 ./snapcap.sh snap_new_project myArt        # also works without sourcing
 ```
 
@@ -29,11 +40,12 @@ snap_new_project myArt v0.1.0 ~/sketches   # leave any part out to be asked
 
 Step by step:
 
-1. **Gather.** The name, version and parent folder come from the arguments. Anything missing is asked for, with defaults in brackets.
-2. **Check.** It stops before writing anything if the name isn't a valid Processing sketch name, the version has characters that would break a folder name, the parent folder doesn't exist, or the project folder already exists. Nothing gets overwritten.
+1. **Gather.** The name and parent folder come from the arguments; anything missing is asked for. The version is always `v0.0.1` unless you give one. For the folder, it shows the full path the project will get (for example `~/jaycode/myArt`) and asks you to press Enter, type `n` to cancel, or type a different folder. Then it shows where frames and snaps will go (see step 4) and asks you to confirm.
+2. **Check.** It stops before writing anything if the name isn't a valid Processing sketch name, the version has characters that would break a folder name, the parent folder doesn't exist, the project folder already exists, or the storage folder already has a `<name>-media` folder (it asks before sharing it). Nothing gets overwritten.
 3. **Build.** It copies `Snapcap.pde` and fills the files in `template/`, swapping `__PROJECT__`, `__VERSION__`, `__SNAPCAP_RELEASE__` and `__DATE__` for real values. Only the files a sketch needs are copied: no `.git`, demo layers or notes.
-4. **Link storage (optional).** If `SNAP_STORAGE_DIR` is set (for example `~/Dropbox/_SNAPS`), the sketch's `frames` and `snaps` folders become links into `$SNAP_STORAGE_DIR/myArt/`, so big image files land in central storage instead of next to the code. The folders themselves are the links, not each file: open `frames/` in the sketch and you see the real images in storage. If `SNAP_STORAGE_DIR` doesn't exist (drive not mounted), no links are made, nothing is created in its place, and output stays in the sketch.
-5. **Version.** It runs `git init`, commits, and tags that first commit with the version. Snapcap reads its version from git, so the first frame you record is already labeled `v0.1.0`. Tag again (`git tag v0.2.0`) and new output gets the new label.
+4. **Link storage.** The project (`<parent>/<name>`, code and git) and its media are kept in two different places. Media goes in `<storage>/<name>-media/frames` and `/snaps`, where `<storage>` is `SNAP_STORAGE_DIR` if you set one, otherwise `~/snapcap-media`. The script shows the full paths: press **Enter** to use them, **n** to keep frames and snaps inside the sketch folder instead, or type a different storage folder (it can save that one to jayci's `.jayrc` so it becomes the default). The sketch's `frames` and `snaps` folders become links to the media folders, so big image files stay out of the code: open `frames/` in the sketch and you see the real images. If `SNAP_STORAGE_DIR` points at a drive that isn't mounted, no links are made, nothing is created in its place, and output stays in the sketch. Run without a terminal (scripts, tests), only a set `SNAP_STORAGE_DIR` is used; `~/snapcap-media` is never created on its own.
+5. **Version.** It runs `git init`, commits, and tags that first commit with the version. Snapcap reads its version from git, so the first frame you record is already labeled `v0.0.1`. Tag again (`git tag v0.0.2`) and new output gets the new label.
+6. **Move in.** Your terminal ends up in the new project folder. (Run as `./snapcap.sh snap_new_project`, it prints the `cd` instead: a script can't move your terminal.)
 
 What you get:
 
@@ -47,6 +59,23 @@ What you get:
 ```
 
 The sketch folder takes the project's name because Processing needs the folder and the main `.pde` to match. To change what every new project starts with, edit the files in `template/`. `bash tests/test_new_project.sh` checks the whole process, and CI runs it on macOS.
+
+## Start fresh: clean the media folders
+
+```bash
+snap_clean_frames    # empties snapcap_util/frames and frames_local
+snap_clean_snaps     # empties snapcap_util/snaps and snaps_local
+snap_clean_all       # both
+./snapcap.sh snap_clean_all   # also works without sourcing
+```
+
+These only empty snapcap's own media folders. A folder that's a link to external
+storage (like `~/Dropbox/_SNAPS`) is skipped, and projects made by `snap_new_project`
+are never touched.
+
+![How the clean commands work](docs/diagrams/clean.png)
+
+<sub>Source: [docs/diagrams/clean.mmd](docs/diagrams/clean.mmd). After editing it, run `bash docs/diagrams/render.sh`.</sub>
 
 ## Use it in a sketch
 
